@@ -1,0 +1,104 @@
+body {
+    background-color: black;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#oval-container {
+    width: 95vw;
+    height: 95vh;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* This is important to keep the sections inside the oval shape */
+}
+
+.section {
+    flex: 1;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: sans-serif;
+    color: #555;
+    font-size: 1.5vw;
+    max-height: 50vh;
+}
+
+#section1 {
+    flex: 1;
+}
+
+#section2 {
+    flex: 2;
+}
+
+#section3 {
+    flex: 1;
+    position: relative; /* Needed for absolute positioning of buttons */
+    overflow: hidden; /* To keep buttons within the oval shape */
+}
+
+#black-screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: black;
+    z-index: 100;
+}
+
+.pet-container {
+    max-width: 50vw;
+}
+
+#pet-image {
+    width: 100%;
+    height: 100%;
+    object-fit: fill; /* Ensures the image fits without cropping */
+}
+
+.progress-bar-container {
+    max-width: 50vw;
+}
+
+#progress-bar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+/* Styles for Section 3 buttons */
+.button-container {
+    position: absolute;
+    width: 100%; /* Take full width of section3 */
+    height: 100%; /* Take full height of section3 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.round-button {
+    position: absolute; /* For curved placement */
+    border-radius: 50%;
+    background-color: #ccc; /* Default button background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.round-button img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    border-radius: 50%; /* To make image round inside button */
+}
+
