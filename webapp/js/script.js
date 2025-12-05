@@ -30,6 +30,7 @@ let progressBarValues = {
 }
 let inactivityTimer;
 let pressedButtons = []
+let isAnyButtonDragging = false;
 let choosenDress = null;
 
 let touchStartX = 0;
@@ -121,6 +122,22 @@ function renderSection3() {
         const endAngle = 0;
         const angleStep = (startAngle - endAngle) / (numButtons + 1);
 
+        // Add visible drop zone if numButtons > 1
+        if (numButtons > 1) {
+            const dropZone = document.createElement('div');
+            const dropZoneRadius = 30; // Matches the logic in dragEnd
+            dropZone.className = 'drop-zone';
+            dropZone.style.width = `${dropZoneRadius * 2}px`;
+            dropZone.style.height = `${dropZoneRadius * 2}px`;
+            dropZone.style.borderRadius = '50%';
+            dropZone.style.background = 'rgba(0, 255, 0, 0.2)'; // Semi-transparent green
+            dropZone.style.position = 'absolute';
+            dropZone.style.left = `calc(50% - ${dropZoneRadius}px)`;
+            dropZone.style.top = `${0 - dropZoneRadius}px`; // Centered vertically at 0
+            dropZone.style.pointerEvents = 'none'; // Don't block mouse events for buttons
+            buttonContainer.appendChild(dropZone);
+        }
+
         for (let i = 0; i < numButtons; i++) {
             const button = document.createElement('div');
             button.className = 'round-button';
@@ -135,13 +152,104 @@ function renderSection3() {
             const x = radius * Math.cos(angle * Math.PI / 180);
             const y = radius * Math.sin(angle * Math.PI / 180);
 
-            button.style.left = `calc(50% + ${x}px - ${buttonSize / 2}px)`;
-            button.style.top = `calc(0% + ${y}px - ${buttonSize / 2}px)`;
+            const initialLeft = `calc(50% + ${x}px - ${buttonSize / 2}px)`;
+            const initialTop = `calc(0% + ${y}px - ${buttonSize / 2}px)`;
 
-            button.onclick = (event) => {
-                buttonPressed(pageContent.ids[i], pageContent.name);
-                event.currentTarget.style.display = 'none'; // Hide the clicked button
-            };
+            button.style.left = initialLeft;
+            button.style.top = initialTop;
+
+            if (numButtons === 1) {
+                button.onclick = (event) => {
+                    buttonPressed(pageContent.ids[i], pageContent.name);
+                    event.currentTarget.style.display = 'none'; // Hide the clicked button
+                };
+            } else {
+                // Drag and drop logic for multiple buttons
+                const makeDraggable = (btn, buttonId, pageName) => {
+                    let isDraggingThis = false;
+
+                    const dragStart = (e) => {
+                        if (isAnyButtonDragging) return;
+                        e.stopPropagation();
+                        isAnyButtonDragging = true;
+                        isDraggingThis = true;
+
+                        btn.style.zIndex = 1000;
+                        btn.style.userSelect = 'none';
+
+                        const event = e.touches ? e.touches[0] : e;
+                        const rect = btn.getBoundingClientRect();
+                        let offsetX = event.clientX - rect.left;
+                        let offsetY = event.clientY - rect.top;
+
+                        const dragMove = (e) => {
+                            if (!isDraggingThis) return;
+                            e.preventDefault();
+
+                            const event = e.touches ? e.touches[0] : e;
+                            const containerRect = buttonContainer.getBoundingClientRect();
+
+                            let newX = event.clientX - containerRect.left - offsetX;
+                            let newY = event.clientY - containerRect.top - offsetY;
+
+                            btn.style.left = `${newX}px`;
+                            btn.style.top = `${newY}px`;
+                        };
+
+                        const dragEnd = (e) => {
+                            if (!isDraggingThis) return;
+                            isAnyButtonDragging = false;
+                            isDraggingThis = false;
+
+                            btn.style.zIndex = 'auto';
+                            btn.style.userSelect = 'auto';
+
+                            document.removeEventListener('mousemove', dragMove);
+                            document.removeEventListener('mouseup', dragEnd);
+                            document.removeEventListener('touchmove', dragMove);
+                            document.removeEventListener('touchend', dragEnd);
+
+                            const rect = btn.getBoundingClientRect();
+                            const containerRect = buttonContainer.getBoundingClientRect();
+
+                            const buttonCenterX = rect.left - containerRect.left + rect.width / 2;
+                            const buttonCenterY = rect.top - containerRect.top + rect.height / 2;
+
+                            const dropZoneRadius = 30;
+
+                            const dropZoneCenterX = buttonContainer.offsetWidth / 2;
+                            const dropZoneCenterY = 0;
+
+                            const distance = Math.sqrt(
+                                Math.pow(buttonCenterX - dropZoneCenterX, 2) +
+                                Math.pow(buttonCenterY - dropZoneCenterY, 2)
+                            );
+
+                            if (distance < dropZoneRadius) {
+                                buttonPressed(buttonId, pageName);
+                                btn.style.display = 'none';
+                            } else {
+                                btn.style.left = initialLeft;
+                                btn.style.top = initialTop;
+                                btn.style.transition = 'left 0.3s, top 0.3s';
+                                setTimeout(() => {
+                                    btn.style.transition = '';
+                                }, 300);
+                            }
+                        };
+
+                        document.addEventListener('mousemove', dragMove);
+                        document.addEventListener('mouseup', dragEnd);
+                        document.addEventListener('touchmove', dragMove, { passive: false });
+                        document.addEventListener('touchend', dragEnd);
+                    };
+
+                    btn.addEventListener('mousedown', dragStart);
+                    btn.addEventListener('touchstart', dragStart, { passive: true });
+                };
+
+                makeDraggable(button, pageContent.ids[i], pageContent.name);
+            }
 
             buttonContainer.appendChild(button);
         }
@@ -159,11 +267,11 @@ function updatePageContent() {
 
     // Update pet image
     if (currentPageIndex === 0) {
-        changePetImage('assets/pet/default.png');
+        changePetImage('assets/pet/default.jpg');
     } else if (currentPageIndex === 1) {
         changePetImage('assets/pet/food.png');
     } else if (currentPageIndex === 2) {
-        changePetImage('assets/pet/default.png');
+        changePetImage('assets/pet/default.jpg');
     }
     // Update button section
     renderSection3();

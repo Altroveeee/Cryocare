@@ -102,3 +102,8 @@ body {
     border-radius: 50%; /* To make image round inside button */
 }
 
+.drop-zone {
+    border: 2px dashed rgba(0, 255, 0, 0.5); /* Dashed green border */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
