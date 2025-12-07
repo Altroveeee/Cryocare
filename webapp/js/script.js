@@ -19,11 +19,15 @@ const CONFIG = {
     },
     // Assets
     ASSETS: {
-        PET_DEFAULT: 'assets/pet/default.jpg',
-        PET_FOOD: 'assets/pet/food.png',
+        // {culture} will be replaced by the active culture name
+        PET_DEFAULT: 'assets/{culture}/pet/default.jpg',
+        PET_FOOD: 'assets/{culture}/pet/food.png',
         PROGRESS_BAR_PREFIX: 'assets/progress-bar/bar',
-        BUTTON_PREFIX: 'assets/buttons/',
-    }
+        BUTTON_PREFIX: 'assets/{culture}/buttons/',
+    },
+    // Available Cultures
+    // 'test' is included to support the legacy assets moved there
+    CULTURES: ['test', 'kurd', 'amazigh', 'maori', 'palestinian', 'uyghurus', 'guarani']
 };
 
 /**
@@ -54,6 +58,7 @@ const PAGES = [
  * Single source of truth for the application state.
  */
 const state = {
+    currentCulture: 'test',
     currentPageIndex: 0,
     progress: {
         food: false,
@@ -89,13 +94,47 @@ const dom = {
    GAME LOGIC HANDLERS
    ========================================================================== */
 
+/**
+ * Resets the game to initial state and optionally selects a new culture.
+ * @param {string|null} culture - Specific culture to load, or null for random.
+ */
+function resetGame(culture = null) {
+    // 1. Select Culture
+    if (culture && CONFIG.CULTURES.includes(culture)) {
+        state.currentCulture = culture;
+    } else {
+        // Random selection
+        const randomIndex = Math.floor(Math.random() * CONFIG.CULTURES.length);
+        state.currentCulture = CONFIG.CULTURES[randomIndex];
+    }
+    console.log(`Game Reset. Active Culture: ${state.currentCulture}`);
+
+    // 2. Reset Progress
+    state.progress = {
+        food: false,
+        dress: false,
+        ritual: false,
+    };
+
+    // 3. Reset Gameplay State
+    state.gameplay = {
+        foodSequence: [],
+        chosenDressId: null,
+    };
+
+    // 4. Reset Navigation
+    state.currentPageIndex = 0;
+
+    // 5. Update UI
+    updateUI();
+    resetInactivityTimer();
+}
+
 function handleFoodInteraction(buttonId) {
-    // Prevent interaction if already complete
     if (state.progress.food) return;
 
     state.gameplay.foodSequence.push(buttonId);
 
-    // Check if sequence is complete
     if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
         const isCorrect = state.gameplay.foodSequence.every(
             (val, index) => val === CONFIG.RULES.CORRECT_FOOD_ORDER[index]
@@ -104,7 +143,7 @@ function handleFoodInteraction(buttonId) {
         if (isCorrect) {
             console.log('Food order is correct');
             state.progress.food = true;
-            state.gameplay.foodSequence = []; // Clear for cleanliness
+            state.gameplay.foodSequence = [];
         } else {
             console.log('Food order incorrect, resetting');
             state.gameplay.foodSequence = [];
@@ -121,7 +160,6 @@ function handleRitualInteraction(buttonId) {
     if (state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID) {
         state.progress.ritual = true;
     } else {
-        // If wrong dress was chosen, reset choice (logic from original code)
         state.gameplay.chosenDressId = null;
     }
 }
@@ -141,7 +179,6 @@ function handleButtonPress(buttonId, pageId) {
             break;
     }
 
-    // Trigger global UI update to reflect state changes
     updateUI();
 }
 
@@ -149,18 +186,14 @@ function handleButtonPress(buttonId, pageId) {
    UI RENDERING & UPDATES
    ========================================================================== */
 
+function getAssetPath(pattern) {
+    return pattern.replace('{culture}', state.currentCulture);
+}
+
 function updateUI() {
     updateProgressBar();
     updatePetImage();
-    // We conditionally re-render controls only if needed, but for simplicity
-    // and matching original behavior, we re-check the view state.
-    // Note: Re-rendering section3 blindly stops ongoing animations, 
-    // but usually updateUI is called after an interaction completes.
-    
-    // However, we shouldn't re-render Section 3 if we are just updating the bar/pet
-    // unless the logical state of the current page changed (like buttons disappearing).
-    // The original code re-renders Section 3 on every swipe and interaction.
-    renderSection3(); 
+    renderSection3();
 }
 
 function updateProgressBar() {
@@ -169,38 +202,30 @@ function updateProgressBar() {
     if (state.progress.dress) score++;
     if (state.progress.ritual) score++;
 
-    console.log(`Progress Score: ${score}`);
     dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
 }
 
 function updatePetImage() {
-    let newImage = CONFIG.ASSETS.PET_DEFAULT;
+    let newImagePattern = CONFIG.ASSETS.PET_DEFAULT;
     
-    // Page 1 is index 1 (Food) in original array logic? 
-    // Original: 
-    // Index 0 (Home) -> default
-    // Index 1 (Food) -> food.png
-    // Index 2 (Dress) -> default
-    // Index 3 (Ritual) -> implied default (was not explicitly handled in original else-if chain)
-    
-    if (state.currentPageIndex === 1) {
-        newImage = CONFIG.ASSETS.PET_FOOD;
+    if (state.currentPageIndex === 1) { // Food Page
+        newImagePattern = CONFIG.ASSETS.PET_FOOD;
     }
     
-    if (dom.petImage.getAttribute('src') !== newImage) {
-        console.log(`Changing pet image to: ${newImage}`);
-        dom.petImage.src = newImage;
+    const newImagePath = getAssetPath(newImagePattern);
+
+    if (dom.petImage.getAttribute('src') !== newImagePath) {
+        console.log(`Changing pet image to: ${newImagePath}`);
+        dom.petImage.src = newImagePath;
     }
 }
 
 function renderSection3() {
-    dom.section3.innerHTML = ''; // Clear content
+    dom.section3.innerHTML = '';
     const page = PAGES[state.currentPageIndex];
     const content = page.content;
 
     if (content.type === 'empty') return;
-
-    // Check if controls should be hidden based on completion state
     if (shouldHideControls(page.id)) return;
 
     if (content.type === 'curved-buttons') {
@@ -210,7 +235,6 @@ function renderSection3() {
 
 function shouldHideControls(pageId) {
     if (pageId === 'food' && state.progress.food) return true;
-    // Dress buttons hide only if RITUAL is complete (original logic)
     if (pageId === 'dress' && state.progress.ritual) return true;
     if (pageId === 'ritual' && state.progress.ritual) return true;
     return false;
@@ -231,13 +255,10 @@ function renderCurvedButtons(content, pageId) {
     buttonContainer.className = 'button-container';
     dom.section3.appendChild(buttonContainer);
 
-    // Add drop zone if draggable (more than 1 button)
-    if (content.count > 1) {
-        createDropZone(buttonContainer);
-    }
+    // Note: Drop zone visual is hidden/removed in this version 
+    // as we drop into Section 2.
 
     const numButtons = content.count;
-    // Inverse proportion for size
     const buttonSize = 40 + 40 / numButtons; 
 
     const radius = CONFIG.UI.BUTTON_RADIUS;
@@ -248,12 +269,10 @@ function renderCurvedButtons(content, pageId) {
     content.ids.forEach((id, index) => {
         const button = createButtonElement(id, pageId, buttonSize);
 
-        // Visibility Check
         if (!shouldButtonBeVisible(pageId, id)) {
             button.style.display = 'none';
         }
         
-        // Calculate Position
         const angle = startAngle - (index + 1) * angleStep;
         const rad = angle * Math.PI / 180;
         const x = radius * Math.cos(rad);
@@ -265,7 +284,6 @@ function renderCurvedButtons(content, pageId) {
         button.style.left = initialLeft;
         button.style.top = initialTop;
 
-        // Attach Interaction
         if (numButtons === 1) {
             button.onclick = (e) => {
                 handleButtonPress(id, pageId);
@@ -288,15 +306,19 @@ function createButtonElement(id, pageId, size) {
     button.style.height = `${size}px`;
 
     const img = document.createElement('img');
-    img.src = `${CONFIG.ASSETS.BUTTON_PREFIX}${pageId}${id}.png`;
+    
+    // Construct Path: assets/{culture}/buttons/{pageId}{id}.png
+    const pathPrefix = getAssetPath(CONFIG.ASSETS.BUTTON_PREFIX);
+    const imgName = `${pageId}${id}.png`;
+    img.src = pathPrefix + imgName;
+
+    // Error handling for missing assets (optional but helpful during dev)
+    img.onerror = () => {
+        console.warn(`Missing asset: ${img.src}`);
+    };
+
     button.appendChild(img);
-
     return button;
-}
-
-function createDropZone(container) {
-    // Drop zone is now Section 2, so we don't create a visual helper in Section 3 anymore.
-    return; 
 }
 
 /* ==========================================================================
@@ -307,18 +329,19 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
     
     const startDrag = (e) => {
         if (state.ui.isAnyButtonDragging) return;
-        e.stopPropagation(); // Prevent swiping while dragging
+        e.stopPropagation();
         
         state.ui.isAnyButtonDragging = true;
         let isDraggingThis = true;
 
-        // Switch to Fixed Positioning to escape overflow:hidden
         const rect = button.getBoundingClientRect();
+        
+        // Fixed positioning to allow dragging outside Section 3
         button.style.position = 'fixed';
         button.style.left = `${rect.left}px`;
         button.style.top = `${rect.top}px`;
         button.style.zIndex = 1000;
-        button.style.width = `${rect.width}px`; // Explicitly set size to prevent resizing
+        button.style.width = `${rect.width}px`;
         button.style.height = `${rect.height}px`;
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -329,12 +352,11 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
 
         const moveDrag = (e) => {
             if (!isDraggingThis) return;
-            e.preventDefault(); // Prevent scrolling
+            e.preventDefault();
 
             const cx = e.touches ? e.touches[0].clientX : e.clientX;
             const cy = e.touches ? e.touches[0].clientY : e.clientY;
             
-            // Move relative to viewport (fixed)
             const newX = cx - offsetX;
             const newY = cy - offsetY;
 
@@ -349,23 +371,18 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
 
             cleanupListeners();
 
-            // Check Drop Condition (Target is Section 2)
+            // Target is Section 2
             const section2 = document.getElementById('section2');
+            
             if (checkDropZoneCollision(button, section2)) {
                 onSuccess();
             } else {
-                // Revert to Absolute Positioning inside Section 3
+                // Revert to absolute
                 button.style.position = 'absolute';
                 button.style.zIndex = 'auto';
                 button.style.userSelect = 'auto';
-                
-                // Animate back to original position
-                // We set the position immediately then animate via CSS transition if desired,
-                // but for simplicity/robustness we just snap back or use a small timeout.
                 button.style.left = resetLeft;
                 button.style.top = resetTop;
-                
-                // Add a transition class or inline style for smooth snap-back if desired
                 button.style.transition = 'left 0.3s, top 0.3s';
                 setTimeout(() => { button.style.transition = ''; }, 300);
             }
@@ -392,7 +409,6 @@ function checkDropZoneCollision(button, targetElement) {
     const btnRect = button.getBoundingClientRect();
     const targetRect = targetElement.getBoundingClientRect();
 
-    // Check for Rectangle Intersection
     return !(
         btnRect.right < targetRect.left || 
         btnRect.left > targetRect.right || 
@@ -402,11 +418,10 @@ function checkDropZoneCollision(button, targetElement) {
 }
 
 /* ==========================================================================
-   INPUT & EVENTS (Swipe, Shake, Sleep)
+   INPUT & EVENTS
    ========================================================================== */
 
 function setupEventListeners() {
-    // Touch Navigation
     dom.ovalContainer.addEventListener('touchstart', (e) => {
         state.ui.touchStartX = e.changedTouches[0].screenX;
     }, { passive: true });
@@ -416,15 +431,13 @@ function setupEventListeners() {
         handleSwipe();
     });
 
-    // Mouse Navigation (for Desktop testing)
     setupMouseNavigation();
-
-    // Shake Detection
     window.addEventListener('devicemotion', handleShake);
 
-    // PC Shake Simulation
     document.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') wakeUp();
+        // Debug: press 'R' to randomize culture
+        if (e.key === 'r' || e.key === 'R') resetGame('test');
     });
 }
 
@@ -456,22 +469,13 @@ function setupMouseNavigation() {
 
 function handleSwipe() {
     const diff = state.ui.touchEndX - state.ui.touchStartX;
-    const threshold = CONFIG.UI.SWIPE_THRESHOLD;
-
-    if (Math.abs(diff) > threshold) {
+    if (Math.abs(diff) > CONFIG.UI.SWIPE_THRESHOLD) {
         if (diff < 0) {
-            // Swipe Left -> Next Page
-            if (state.currentPageIndex < PAGES.length - 1) {
-                state.currentPageIndex++;
-                updateUI();
-            }
+            if (state.currentPageIndex < PAGES.length - 1) state.currentPageIndex++;
         } else {
-            // Swipe Right -> Prev Page
-            if (state.currentPageIndex > 0) {
-                state.currentPageIndex--;
-                updateUI();
-            }
+            if (state.currentPageIndex > 0) state.currentPageIndex--;
         }
+        updateUI();
         resetInactivityTimer();
     }
 }
@@ -479,27 +483,17 @@ function handleSwipe() {
 function handleShake(event) {
     const acc = event.accelerationIncludingGravity || event.acceleration;
     if (!acc) return;
-
-    // Use a simpler check if x/y/z not fully available
     const x = acc.x || 0;
     const y = acc.y || 0;
     const z = acc.z || 0;
-    
     const totalAcc = Math.sqrt(x**2 + y**2 + z**2);
     
-    // Adjust threshold based on availability of gravity
     const threshold = (!event.accelerationIncludingGravity && event.acceleration) 
         ? CONFIG.UI.SHAKE_THRESHOLD / 2 
         : CONFIG.UI.SHAKE_THRESHOLD;
 
-    if (totalAcc > threshold) {
-        wakeUp();
-    }
+    if (totalAcc > threshold) wakeUp();
 }
-
-/* ==========================================================================
-   SLEEP MODE
-   ========================================================================== */
 
 function showBlackScreen() {
     dom.blackScreenOverlay.style.display = 'block';
@@ -517,15 +511,10 @@ function resetInactivityTimer() {
     state.ui.inactivityTimer = setTimeout(showBlackScreen, CONFIG.TIMEOUT_MS);
 }
 
-/* ==========================================================================
-   INITIALIZATION
-   ========================================================================== */
-
 function init() {
-    updateUI();
+    // Initial setup with random or default culture
+    resetGame(); 
     setupEventListeners();
-    resetInactivityTimer();
 }
 
-// Start
 document.addEventListener('DOMContentLoaded', init);
