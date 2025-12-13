@@ -131,29 +131,30 @@ function resetGame(culture = null) {
 }
 
 function handleFoodInteraction(buttonId) {
-    if (state.progress.food) return;
+    if (state.progress.food) return false;
 
-    state.gameplay.foodSequence.push(buttonId);
+    const currentStep = state.gameplay.foodSequence.length;
+    const expectedId = CONFIG.RULES.CORRECT_FOOD_ORDER[currentStep];
 
-    if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
-        const isCorrect = state.gameplay.foodSequence.every(
-            (val, index) => val === CONFIG.RULES.CORRECT_FOOD_ORDER[index]
-        );
+    if (buttonId === expectedId) {
+        state.gameplay.foodSequence.push(buttonId);
 
-        if (isCorrect) {
+        if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
             console.log('Food order is correct');
             state.progress.food = true;
             state.gameplay.foodSequence = [];
-        } else {
-            console.log('Food order incorrect, resetting');
-            state.gameplay.foodSequence = [];
         }
+        return true;
+    } else {
+        console.log(`Incorrect food item. Expected ${expectedId}, got ${buttonId}`);
+        return false;
     }
 }
 
 function handleDressInteraction(buttonId) {
     state.gameplay.chosenDressId = buttonId;
     state.progress.dress = true;
+    return true;
 }
 
 function handleRitualInteraction(buttonId) {
@@ -162,24 +163,31 @@ function handleRitualInteraction(buttonId) {
     } else {
         state.gameplay.chosenDressId = null;
     }
+    return true;
 }
 
 function handleButtonPress(buttonId, pageId) {
     console.log(`Button pressed: ${buttonId} on page: ${pageId}`);
     
+    let isAccepted = false;
+
     switch (pageId) {
         case 'food':
-            handleFoodInteraction(buttonId);
+            isAccepted = handleFoodInteraction(buttonId);
             break;
         case 'dress':
-            handleDressInteraction(buttonId);
+            isAccepted = handleDressInteraction(buttonId);
             break;
         case 'ritual':
-            handleRitualInteraction(buttonId);
+            isAccepted = handleRitualInteraction(buttonId);
             break;
     }
 
-    updateUI();
+    if (isAccepted) {
+        updateUI();
+    }
+    
+    return isAccepted;
 }
 
 /* ==========================================================================
@@ -291,7 +299,7 @@ function renderCurvedButtons(content, pageId) {
             };
         } else {
             setupDragAndDrop(button, buttonContainer, initialLeft, initialTop, () => {
-                handleButtonPress(id, pageId);
+                return handleButtonPress(id, pageId);
             });
         }
 
@@ -374,9 +382,13 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
             // Target is Section 2
             const section2 = document.getElementById('section2');
             
+            let droppedSuccessfully = false;
+
             if (checkDropZoneCollision(button, section2)) {
-                onSuccess();
-            } else {
+                droppedSuccessfully = onSuccess();
+            }
+
+            if (!droppedSuccessfully) {
                 // Revert to absolute
                 button.style.position = 'absolute';
                 button.style.zIndex = 'auto';
