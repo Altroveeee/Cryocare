@@ -1,0 +1,44 @@
+{
+    "test": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["1", "2", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "kurd": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "amazigh": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "maori": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "palestinian": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "uyghurus": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    },
+    "guarani": {
+        "RULES": {
+            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_DRESS_ID": "1"
+        }
+    }
+}

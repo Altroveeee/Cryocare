@@ -2,43 +2,27 @@
  * CONFIGURATION & CONSTANTS
  * Centralized configuration for easy adjustments.
  */
-const CONFIG = {
-    // Game Rules
-    RULES: {
-        CORRECT_FOOD_ORDER: ['2', '1', '3'],
-        CORRECT_DRESS_ID: '1',
-    },
-    // Timers
-    TIMEOUT_MS: 30000,
-    GIF_DURATION_MS: 4000,
-    // UI Layout
-    UI: {
-        BUTTON_RADIUS: 100,
-        DROP_ZONE_RADIUS: 30,
-        SWIPE_THRESHOLD: 50,
-        SHAKE_THRESHOLD: 20,
-    },
-    // Assets
-    ASSETS: {
-        // {culture} will be replaced by the active culture name
-        PET_DEFAULT: 'assets/{culture}/pet/default.png',
-        PET_DRESS: 'assets/{culture}/pet/dress{id}.png',
-        PET_BAKING: 'assets/{culture}/pet/baking.gif',
-        PET_RITUAL: 'assets/{culture}/pet/ritual.gif',
-        
-        // Bowl assets (fixed paths, not culture dependent in this request context, but handled in logic)
-        BOWL_EMPTY: 'assets/bowl/empty.png',
-        BOWL_STATE_1: 'assets/bowl/1.png',
-        BOWL_STATE_2: 'assets/bowl/2.png',
-        BOWL_STATE_3: 'assets/bowl/3.png',
+let CONFIG = {};
+let CULTURE_CONFIGS = {};
 
-        PROGRESS_BAR_PREFIX: 'assets/progress-bar/bar',
-        BUTTON_PREFIX: 'assets/{culture}/buttons/',
-    },
-    // Available Cultures
-    // 'test' is included to support the legacy assets moved there
-    CULTURES: ['test', 'kurd', 'amazigh', 'maori', 'palestinian', 'uyghurus', 'guarani']
-};
+async function loadConfiguration() {
+    try {
+        const [defaultConfigRes, cultureConfigsRes] = await Promise.all([
+            fetch('config/default.json'),
+            fetch('config/cultures.json')
+        ]);
+
+        if (!defaultConfigRes.ok || !cultureConfigsRes.ok) {
+            throw new Error('Failed to load configuration files');
+        }
+
+        CONFIG = await defaultConfigRes.json();
+        CULTURE_CONFIGS = await cultureConfigsRes.json();
+        console.log('Configuration loaded successfully');
+    } catch (error) {
+        console.error('Error loading configuration:', error);
+    }
+}
 
 /**
  * PAGE DEFINITIONS
@@ -55,7 +39,7 @@ const PAGES = [
     },
     {
         id: 'dress',
-        content: { type: 'curved-buttons', count: 2, ids: ['1', '2'] }
+        content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] }
     },
     {
         id: 'ritual',
@@ -120,6 +104,12 @@ function resetGame(culture = null) {
         state.currentCulture = CONFIG.CULTURES[randomIndex];
     }
     console.log(`Game Reset. Active Culture: ${state.currentCulture}`);
+
+    // Apply Culture Specific Rules
+    if (CULTURE_CONFIGS[state.currentCulture]) {
+        CONFIG.RULES = { ...CONFIG.RULES, ...CULTURE_CONFIGS[state.currentCulture].RULES };
+        console.log(`Applied rules for ${state.currentCulture}`, CONFIG.RULES);
+    }
 
     // 2. Reset Progress
     state.progress = {
@@ -577,7 +567,10 @@ function resetInactivityTimer() {
     state.ui.inactivityTimer = setTimeout(showBlackScreen, CONFIG.TIMEOUT_MS);
 }
 
-function init() {
+async function init() {
+    // Load Configuration
+    await loadConfiguration();
+
     // Initial setup with random or default culture
     resetGame(); 
     setupEventListeners();

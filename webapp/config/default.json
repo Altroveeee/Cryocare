@@ -1,0 +1,27 @@
+{
+    "TIMEOUT_MS": 30000,
+    "GIF_DURATION_MS": 4000,
+    "UI": {
+        "BUTTON_RADIUS": 100,
+        "DROP_ZONE_RADIUS": 30,
+        "SWIPE_THRESHOLD": 50,
+        "SHAKE_THRESHOLD": 20
+    },
+    "ASSETS": {
+        "PET_DEFAULT": "assets/{culture}/pet/default.png",
+        "PET_DRESS": "assets/{culture}/pet/dress{id}.png",
+        "PET_BAKING": "assets/{culture}/pet/baking.gif",
+        "PET_RITUAL": "assets/{culture}/pet/ritual.gif",
+        "BOWL_EMPTY": "assets/bowl/empty.png",
+        "BOWL_STATE_1": "assets/bowl/1.png",
+        "BOWL_STATE_2": "assets/bowl/2.png",
+        "BOWL_STATE_3": "assets/bowl/3.png",
+        "PROGRESS_BAR_PREFIX": "assets/progress-bar/bar",
+        "BUTTON_PREFIX": "assets/{culture}/buttons/"
+    },
+    "CULTURES": ["test", "kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
+    "RULES": {
+        "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+        "CORRECT_DRESS_ID": "1"
+    }
+}
