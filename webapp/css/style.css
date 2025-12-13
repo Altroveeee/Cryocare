@@ -11,7 +11,7 @@ body {
 #oval-container {
     width: 95vw;
     height: 95vh;
-    background-color: #bbb;
+    background-color: white;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -55,13 +55,47 @@ body {
 }
 
 .pet-container {
-    max-width: 50vw;
+    max-width: 70vw;
+    position: relative; /* Context for absolute positioning of content zone */
 }
 
 #pet-image {
     width: 100%;
     height: 100%;
     object-fit: fill; /* Ensures the image fits without cropping */
+}
+
+#pet-content-zone {
+    position: absolute;
+    bottom: 80%; /* Position right above the container */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px; /* Spacing from the pet head */
+    z-index: 20; /* Ensure it is above other elements */
+}
+
+#ritual-trigger-btn {
+    position: relative; /* Override .round-button absolute */
+    width: 80px; /* Adjust size as needed */
+    height: 80px;
+    background-color: white;
+    border-radius: 50%;
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#ritual-trigger-btn img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    border-radius: 50%;
 }
 
 .progress-bar-container {
@@ -87,7 +121,7 @@ body {
 .round-button {
     position: absolute; /* For curved placement */
     border-radius: 50%;
-    background-color: #ccc; /* Default button background */
+    background-color: white; /* Default button background */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -100,10 +134,5 @@ body {
     height: 80%;
     object-fit: contain;
     border-radius: 50%; /* To make image round inside button */
-}
-
-.drop-zone {
-    border: 2px dashed rgba(0, 255, 0, 0.5); /* Dashed green border */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 

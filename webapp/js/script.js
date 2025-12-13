@@ -41,10 +41,6 @@ const PAGES = [
         id: 'dress',
         content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] }
     },
-    {
-        id: 'ritual',
-        content: { type: 'curved-buttons', count: 1, ids: ['1'] }
-    }
 ];
 
 /**
@@ -84,6 +80,9 @@ const dom = {
     blackScreenOverlay: document.getElementById('black-screen-overlay'),
     petImage: document.getElementById('pet-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
+    petContentZone: document.getElementById('pet-content-zone'),
+    ritualTriggerBtn: document.getElementById('ritual-trigger-btn'),
+    ritualTriggerImg: document.getElementById('ritual-trigger-img'),
 };
 
 /* ==========================================================================
@@ -222,6 +221,29 @@ function handleButtonPress(buttonId, pageId) {
     return isAccepted;
 }
 
+function triggerRitual() {
+    if (state.progress.ritual) return;
+    
+    state.progress.ritual = true;
+    playGif(CONFIG.ASSETS.PET_RITUAL);
+    updateUI();
+}
+
+function updateContentZone() {
+    const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
+    const isRitualDone = state.progress.ritual;
+    const isOnDressPage = state.currentPageIndex === 2; // Index for 'dress' page
+    
+    if (isDressCorrect && !isRitualDone && !state.ui.isGifPlaying && isOnDressPage) {
+        if (CONFIG.ASSETS && CONFIG.ASSETS.RITUAL_BUTTON_ICON) {
+            dom.ritualTriggerImg.src = CONFIG.ASSETS.RITUAL_BUTTON_ICON;
+        }
+        dom.ritualTriggerBtn.style.display = 'flex'; // Changed to flex for centering
+    } else {
+        dom.ritualTriggerBtn.style.display = 'none';
+    }
+}
+
 /* ==========================================================================
    UI RENDERING & UPDATES
    ========================================================================== */
@@ -233,6 +255,7 @@ function getAssetPath(pattern) {
 function updateUI() {
     updateProgressBar();
     updatePetImage();
+    updateContentZone();
     renderSection3();
 }
 
@@ -486,6 +509,13 @@ function setupEventListeners() {
         state.ui.touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     });
+
+    // Ritual Button Listener
+    dom.ritualTriggerBtn.addEventListener('click', triggerRitual);
+    dom.ritualTriggerBtn.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); // Prevent swipe interference
+        triggerRitual();
+    }, { passive: true });
 
     setupMouseNavigation();
     window.addEventListener('devicemotion', handleShake);
