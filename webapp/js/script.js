@@ -5,11 +5,12 @@
 const CONFIG = {
     // Game Rules
     RULES: {
-        CORRECT_FOOD_ORDER: ['2', '1', '4', '3'],
+        CORRECT_FOOD_ORDER: ['2', '1', '3'],
         CORRECT_DRESS_ID: '1',
     },
     // Timers
     TIMEOUT_MS: 30000,
+    GIF_DURATION_MS: 4000,
     // UI Layout
     UI: {
         BUTTON_RADIUS: 100,
@@ -20,8 +21,17 @@ const CONFIG = {
     // Assets
     ASSETS: {
         // {culture} will be replaced by the active culture name
-        PET_DEFAULT: 'assets/{culture}/pet/default.jpg',
-        PET_FOOD: 'assets/{culture}/pet/food.png',
+        PET_DEFAULT: 'assets/{culture}/pet/default.png',
+        PET_DRESS: 'assets/{culture}/pet/dress{id}.png',
+        PET_BAKING: 'assets/{culture}/pet/baking.gif',
+        PET_RITUAL: 'assets/{culture}/pet/ritual.gif',
+        
+        // Bowl assets (fixed paths, not culture dependent in this request context, but handled in logic)
+        BOWL_EMPTY: 'assets/bowl/empty.png',
+        BOWL_STATE_1: 'assets/bowl/1.png',
+        BOWL_STATE_2: 'assets/bowl/2.png',
+        BOWL_STATE_3: 'assets/bowl/3.png',
+
         PROGRESS_BAR_PREFIX: 'assets/progress-bar/bar',
         BUTTON_PREFIX: 'assets/{culture}/buttons/',
     },
@@ -41,7 +51,7 @@ const PAGES = [
     },
     {
         id: 'food',
-        content: { type: 'curved-buttons', count: 4, ids: ['1', '2', '3', '4'] }
+        content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] }
     },
     {
         id: 'dress',
@@ -58,7 +68,7 @@ const PAGES = [
  * Single source of truth for the application state.
  */
 const state = {
-    currentCulture: 'test',
+    currentCulture: 'kurd',
     currentPageIndex: 0,
     progress: {
         food: false,
@@ -68,6 +78,7 @@ const state = {
     gameplay: {
         foodSequence: [],
         chosenDressId: null,
+        currentPetImage: null, 
     },
     ui: {
         isAnyButtonDragging: false,
@@ -75,6 +86,7 @@ const state = {
         touchStartX: 0,
         touchEndX: 0,
         isMouseDragging: false,
+        isGifPlaying: false,
     }
 };
 
@@ -120,12 +132,14 @@ function resetGame(culture = null) {
     state.gameplay = {
         foodSequence: [],
         chosenDressId: null,
+        currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
     };
 
     // 4. Reset Navigation
     state.currentPageIndex = 0;
 
     // 5. Update UI
+    state.ui.isGifPlaying = false;
     updateUI();
     resetInactivityTimer();
 }
@@ -143,6 +157,12 @@ function handleFoodInteraction(buttonId) {
             console.log('Food order is correct');
             state.progress.food = true;
             state.gameplay.foodSequence = [];
+            
+            // Call updateUI here to hide buttons before GIF starts
+            updateUI(); 
+
+            // Play Baking GIF
+            playGif(CONFIG.ASSETS.PET_BAKING);
         }
         return true;
     } else {
@@ -154,16 +174,38 @@ function handleFoodInteraction(buttonId) {
 function handleDressInteraction(buttonId) {
     state.gameplay.chosenDressId = buttonId;
     state.progress.dress = true;
+    
+    // Update Pet Image
+    const dressPattern = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
+    state.gameplay.currentPetImage = getAssetPath(dressPattern);
+    
     return true;
 }
 
 function handleRitualInteraction(buttonId) {
     if (state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID) {
         state.progress.ritual = true;
+        
+        // Play Ritual GIF
+        playGif(CONFIG.ASSETS.PET_RITUAL);
     } else {
         state.gameplay.chosenDressId = null;
+        // Optional: Maybe revert image if wrong dress? 
+        // For now, keeping current behavior.
     }
     return true;
+}
+
+function playGif(assetPattern) {
+    state.ui.isGifPlaying = true;
+    const gifPath = getAssetPath(assetPattern);
+    console.log(`Playing GIF: ${gifPath}`);
+    dom.petImage.src = gifPath;
+
+    setTimeout(() => {
+        state.ui.isGifPlaying = false;
+        updateUI(); // Restore the correct image
+    }, CONFIG.GIF_DURATION_MS);
 }
 
 function handleButtonPress(buttonId, pageId) {
@@ -183,7 +225,7 @@ function handleButtonPress(buttonId, pageId) {
             break;
     }
 
-    if (isAccepted) {
+    if (isAccepted && !state.ui.isGifPlaying) {
         updateUI();
     }
     
@@ -214,17 +256,29 @@ function updateProgressBar() {
 }
 
 function updatePetImage() {
-    let newImagePattern = CONFIG.ASSETS.PET_DEFAULT;
-    
-    if (state.currentPageIndex === 1) { // Food Page
-        newImagePattern = CONFIG.ASSETS.PET_FOOD;
-    }
-    
-    const newImagePath = getAssetPath(newImagePattern);
+    // If a GIF is playing, do not override it
+    if (state.ui.isGifPlaying) return;
 
-    if (dom.petImage.getAttribute('src') !== newImagePath) {
-        console.log(`Changing pet image to: ${newImagePath}`);
-        dom.petImage.src = newImagePath;
+    let newImagePath;
+    
+    if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
+        const count = state.gameplay.foodSequence.length;
+        if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
+        else if (count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
+        else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
+        else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
+    } else {
+        // All other pages show the current pet state (default or dressed)
+        newImagePath = state.gameplay.currentPetImage;
+    }
+
+    // Ensure we have a valid path (getAssetPath handles {culture} if present in string)
+    // Note: Bowl assets don't have {culture} but getAssetPath is safe to call.
+    const finalPath = getAssetPath(newImagePath);
+
+    if (dom.petImage.getAttribute('src') !== finalPath) {
+        console.log(`Changing pet image to: ${finalPath}`);
+        dom.petImage.src = finalPath;
     }
 }
 
@@ -449,7 +503,7 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') wakeUp();
         // Debug: press 'R' to randomize culture
-        if (e.key === 'r' || e.key === 'R') resetGame('test');
+        if (e.key === 'r' || e.key === 'R') resetGame('kurd');
     });
 }
 
