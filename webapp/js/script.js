@@ -83,6 +83,12 @@ const dom = {
     petContentZone: document.getElementById('pet-content-zone'),
     ritualTriggerBtn: document.getElementById('ritual-trigger-btn'),
     ritualTriggerImg: document.getElementById('ritual-trigger-img'),
+    navContainerLeft: document.getElementById('nav-container-left'),
+    navContainerRight: document.getElementById('nav-container-right'),
+    navArrowLeft: document.getElementById('nav-arrow-left'),
+    navArrowRight: document.getElementById('nav-arrow-right'),
+    navShadowLeft: document.getElementById('nav-shadow-left'),
+    navShadowRight: document.getElementById('nav-shadow-right'),
 };
 
 /* ==========================================================================
@@ -109,6 +115,12 @@ function resetGame(culture = null) {
         CONFIG.RULES = { ...CONFIG.RULES, ...CULTURE_CONFIGS[state.currentCulture].RULES };
         console.log(`Applied rules for ${state.currentCulture}`, CONFIG.RULES);
     }
+
+    // Set Navigation Arrow Images
+    if (CONFIG.ASSETS.ARROW_LEFT) dom.navArrowLeft.src = CONFIG.ASSETS.ARROW_LEFT;
+    if (CONFIG.ASSETS.ARROW_RIGHT) dom.navArrowRight.src = CONFIG.ASSETS.ARROW_RIGHT;
+    if (CONFIG.ASSETS.ARROW_SHADOW_LEFT) dom.navShadowLeft.src = CONFIG.ASSETS.ARROW_SHADOW_LEFT;
+    if (CONFIG.ASSETS.ARROW_SHADOW_RIGHT) dom.navShadowRight.src = CONFIG.ASSETS.ARROW_SHADOW_RIGHT;
 
     // 2. Reset Progress
     state.progress = {
@@ -257,6 +269,10 @@ function updateUI() {
     updatePetImage();
     updateContentZone();
     renderSection3();
+
+    // Update Navigation Arrows
+    dom.navContainerLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
+    dom.navContainerRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
 }
 
 function updateProgressBar() {
@@ -517,6 +533,19 @@ function setupEventListeners() {
         triggerRitual();
     }, { passive: true });
 
+    // Nav Arrows Listeners
+    dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
+    dom.navArrowLeft.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); 
+        handleNavClick('prev');
+    }, { passive: true });
+
+    dom.navArrowRight.addEventListener('click', () => handleNavClick('next'));
+    dom.navArrowRight.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); 
+        handleNavClick('next');
+    }, { passive: true });
+
     setupMouseNavigation();
     window.addEventListener('devicemotion', handleShake);
 
@@ -551,6 +580,16 @@ function setupMouseNavigation() {
             dom.ovalContainer.style.cursor = 'grab';
         }
     });
+}
+
+function handleNavClick(direction) {
+    if (direction === 'prev') {
+        if (state.currentPageIndex > 0) state.currentPageIndex--;
+    } else if (direction === 'next') {
+        if (state.currentPageIndex < PAGES.length - 1) state.currentPageIndex++;
+    }
+    updateUI();
+    resetInactivityTimer();
 }
 
 function handleSwipe() {

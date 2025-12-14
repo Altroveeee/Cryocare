@@ -16,6 +16,11 @@
         "BOWL_STATE_1": "assets/defaults/bowl/1.png",
         "BOWL_STATE_2": "assets/defaults/bowl/2.png",
         "BOWL_STATE_3": "assets/defaults/bowl/3.png",
+        "RITUAL_BUTTON_ICON": "assets/defaults/ritual.png",
+        "ARROW_LEFT": "assets/defaults/left_arrow.png",
+        "ARROW_RIGHT": "assets/defaults/right_arrow.png",
+        "ARROW_SHADOW_LEFT": "assets/defaults/arrow_shadow_left.png",
+        "ARROW_SHADOW_RIGHT": "assets/defaults/arrow_shadow_right.png",
         "PROGRESS_BAR_PREFIX": "assets/progress-bar/bar",
         "BUTTON_PREFIX": "assets/{culture}/buttons/"
     },
