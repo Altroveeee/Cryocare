@@ -165,7 +165,7 @@ body {
     height: auto;
 }
 
-#nav-shadow-left {
+/* #nav-shadow-left {
     transform: translate(-7%, -50%);
     width: 800%;
 }
@@ -173,5 +173,5 @@ body {
 #nav-shadow-right {
     transform: translate(-93%, -50%);
     width: 800%;
-}
+} */
 

@@ -2,7 +2,7 @@
     "test": {
         "RULES": {
             "CORRECT_FOOD_ORDER": ["1", "2", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_DRESS_ID": "2"
         }
     },
     "kurd": {
