@@ -11,8 +11,6 @@ async function loadConfiguration() {
     try {
         // Carica in parallelo i due file JSON
         const [defaultConfigRes, cultureConfigsRes] = await Promise.all([
-            fetch('config/default.json'),
-            fetch('config/cultures.json')
             fetch('config/default.json'),     // configurazione base
             fetch('config/cultures.json')     // regole specifiche per cultura
         ]);
