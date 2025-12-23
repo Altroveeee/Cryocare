@@ -650,6 +650,13 @@ function resetInactivityTimer() {
     state.ui.inactivityTimer = setTimeout(showBlackScreen, CONFIG.TIMEOUT_MS);
 }
 
+function triggerArduino() {
+    fetch("http://192.168.1.44/servo")
+        .then(res => res.text())
+        .then(text => console.log("Risposta ESP32:", text))
+        .catch(err => console.error("Errore:", err));
+}
+
 async function init() {
     // Load Configuration
     await loadConfiguration();
