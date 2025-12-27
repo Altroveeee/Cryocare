@@ -652,11 +652,110 @@ function setupEventListeners() {
     setupMouseNavigation();
     window.addEventListener('devicemotion', handleShake);
 
+    // Pet Undress Listeners
+    dom.petImage.addEventListener('mousedown', startUndressDrag);
+    dom.petImage.addEventListener('touchstart', startUndressDrag, { passive: false });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') wakeUp();
         // Debug: press 'R' to randomize culture
         if (e.key === 'r' || e.key === 'R') resetGame('kurd');
     });
+}
+
+function startUndressDrag(e) {
+    // Only allow undress if:
+    // 1. We are on the 'dress' page (id='dress')
+    // 2. A dress is currently chosen
+    const dressPageIndex = PAGES.findIndex(p => p.id === 'dress');
+    if (state.currentPageIndex !== dressPageIndex || !state.gameplay.chosenDressId) {
+        return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation(); // Prevent page swipe
+
+    const touch = e.touches ? e.touches[0] : e;
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+
+    // Create Ghost Element (The dress button icon)
+    const ghost = document.createElement('img');
+    const pathPrefix = getAssetPath(CONFIG.ASSETS.BUTTON_PREFIX);
+    const imgName = `dress${state.gameplay.chosenDressId}.png`;
+    ghost.src = pathPrefix + imgName;
+    
+    ghost.style.position = 'fixed';
+    ghost.style.width = '60px'; // Approximate button size
+    ghost.style.height = '60px';
+    ghost.style.zIndex = 1000;
+    ghost.style.pointerEvents = 'none';
+    ghost.style.left = `${startX - 30}px`;
+    ghost.style.top = `${startY - 30}px`;
+    
+    document.body.appendChild(ghost);
+
+    // Temporarily show default pet (undressed)
+    const defaultPetPath = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
+    dom.petImage.src = defaultPetPath;
+
+    let isDragging = true;
+
+    const moveUndressDrag = (ev) => {
+        if (!isDragging) return;
+        ev.preventDefault(); // Prevent scrolling
+        const t = ev.touches ? ev.touches[0] : ev;
+        ghost.style.left = `${t.clientX - 30}px`;
+        ghost.style.top = `${t.clientY - 30}px`;
+    };
+
+    const endUndressDrag = (ev) => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        // Remove listeners
+        document.removeEventListener('mousemove', moveUndressDrag);
+        document.removeEventListener('mouseup', endUndressDrag);
+        document.removeEventListener('touchmove', moveUndressDrag);
+        document.removeEventListener('touchend', endUndressDrag);
+
+        // Check drop position relative to Pet Image
+        // If dropped OUTSIDE the pet image rect, we confirm undress.
+        const t = ev.changedTouches ? ev.changedTouches[0] : ev;
+        const dropX = t.clientX;
+        const dropY = t.clientY;
+
+        const petRect = dom.petImage.getBoundingClientRect();
+        console.log('Pet Rect:', petRect);
+        
+        // Define "Outside" as not colliding with the pet rect
+        const isInsidePet = (
+            dropX >= petRect.left + 80 &&
+            dropX <= petRect.right - 80 &&
+            dropY >= petRect.top + 150 &&
+            dropY <= petRect.bottom - 150
+        );
+
+        document.body.removeChild(ghost);
+
+        if (!isInsidePet) {
+            // Confirm Undress
+            console.log("Undressed!");
+            state.gameplay.chosenDressId = null;
+            state.progress.dress = false;
+            state.gameplay.currentPetImage = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
+            updateUI(); // This will show buttons again and keep pet default
+        } else {
+            // Cancel Undress (restore dressed image)
+            console.log("Undress cancelled");
+            updatePetImage(); // Will restore the dressed image from state
+        }
+    };
+
+    document.addEventListener('mousemove', moveUndressDrag);
+    document.addEventListener('mouseup', endUndressDrag);
+    document.addEventListener('touchmove', moveUndressDrag, { passive: false });
+    document.addEventListener('touchend', endUndressDrag);
 }
 
 function setupMouseNavigation() {

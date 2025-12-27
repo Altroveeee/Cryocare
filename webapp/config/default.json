@@ -24,9 +24,9 @@
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
         "LOADING_ANIMATION": "assets/defaults/loading/jump.gif"
     },
-    "CULTURES": ["test", "kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
+    "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
         "CORRECT_FOOD_ORDER": ["2", "1", "3"],
         "CORRECT_DRESS_ID": "1"
     }
-}
+}   
