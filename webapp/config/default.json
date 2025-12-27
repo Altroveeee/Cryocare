@@ -8,7 +8,7 @@
         "SHAKE_THRESHOLD": 20
     },
     "ASSETS": {
-        "PET_DEFAULT": "assets/{culture}/pet/default.png",
+        "PET_DEFAULT": "assets/defaults/default_pet.png",
         "PET_DRESS": "assets/{culture}/pet/dress{id}.png",
         "PET_BAKING": "assets/{culture}/pet/baking.gif",
         "PET_RITUAL": "assets/{culture}/pet/ritual.gif",
