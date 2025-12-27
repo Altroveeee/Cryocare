@@ -17,12 +17,14 @@
         "BOWL_STATE_2": "assets/defaults/bowl/2.png",
         "BOWL_STATE_3": "assets/defaults/bowl/3.png",
         "RITUAL_BUTTON_ICON": "assets/defaults/ritual.png",
-        "ARROW_LEFT": "assets/defaults/left_arrow.png",
-        "ARROW_RIGHT": "assets/defaults/right_arrow.png",
-        "ARROW_SHADOW_LEFT": "assets/defaults/arrow_shadow_left.png",
-        "ARROW_SHADOW_RIGHT": "assets/defaults/arrow_shadow_right.png",
-        "PROGRESS_BAR_PREFIX": "assets/progress-bar/bar",
-        "BUTTON_PREFIX": "assets/{culture}/buttons/"
+        "ARROW_LEFT": "assets/defaults/arrows/left_arrow.png",
+        "ARROW_RIGHT": "assets/defaults/arrows/right_arrow.png",
+        "ARROW_SHADOW_LEFT": "assets/defaults/arrows/arrow_shadow_left.png",
+        "ARROW_SHADOW_RIGHT": "assets/defaults/arrows/arrow_shadow_right.png",
+        "PROGRESS_BAR_PREFIX": "assets/defaults/progress_bar/bar_",
+        "BUTTON_PREFIX": "assets/{culture}/buttons/",
+        "LOADING_STATIC": "assets/defaults/loading/loading.png",
+        "LOADING_ANIMATION": "assets/defaults/loading/jump.gif"
     },
     "CULTURES": ["test", "kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {

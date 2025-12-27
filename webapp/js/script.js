@@ -55,6 +55,8 @@ const PAGES = [
  * Single source of truth for the application state.
  */
 const state = {
+    appPhase: 'loading', // 'loading' | 'gameplay'
+    loadingStep: 'static', // 'static' | 'animation'
     currentCulture: 'kurd',
     currentPageIndex: 0,
     progress: {
@@ -278,11 +280,22 @@ function updateUI() {
     renderSection3();
 
     // Update Navigation Arrows
-    dom.navContainerLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
-    dom.navContainerRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
+    if (state.appPhase === 'loading') {
+        dom.navContainerLeft.style.display = 'none';
+        dom.navContainerRight.style.display = 'none';
+    } else {
+        dom.navContainerLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
+        dom.navContainerRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
+    }
 }
 
 function updateProgressBar() {
+    if (state.appPhase === 'loading') {
+        dom.progressBarImage.style.display = 'none';
+        return;
+    }
+    dom.progressBarImage.style.display = 'block';
+
     let score = 0;
     if (state.progress.food) score++;
     if (state.progress.dress) score++;
@@ -297,7 +310,13 @@ function updatePetImage() {
 
     let newImagePath;
     
-    if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
+    if (state.appPhase === 'loading') {
+        if (state.loadingStep === 'static') {
+            newImagePath = CONFIG.ASSETS.LOADING_STATIC;
+        } else {
+            newImagePath = CONFIG.ASSETS.LOADING_ANIMATION;
+        }
+    } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
         const count = state.gameplay.foodSequence.length;
         if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
         else if (count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
@@ -320,6 +339,9 @@ function updatePetImage() {
 
 function renderSection3() {
     dom.section3.innerHTML = '';
+
+    if (state.appPhase === 'loading') return;
+
     const page = PAGES[state.currentPageIndex];
     const content = page.content;
 
@@ -661,9 +683,33 @@ async function init() {
     // Load Configuration
     await loadConfiguration();
 
-    // Initial setup with random or default culture
-    resetGame(); 
+    // Start loading sequence
+    handleStartupSequence(); 
     setupEventListeners();
+}
+
+async function handleStartupSequence() {
+    console.log('Starting App Sequence...');
+    
+    // Phase 1: Static Loading Image
+    state.appPhase = 'loading';
+    state.loadingStep = 'static';
+    updateUI();
+
+    // Wait 3 seconds
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Phase 2: Animation
+    state.loadingStep = 'animation';
+    updateUI();
+
+    // Wait for animation (using GIF_DURATION_MS or default 3s)
+    const animDuration = CONFIG.GIF_DURATION_MS || 3000;
+    await new Promise(resolve => setTimeout(resolve, animDuration));
+
+    // Phase 3: Gameplay
+    state.appPhase = 'gameplay';
+    resetGame(); // Initialize actual game state
 }
 
 document.addEventListener('DOMContentLoaded', init);
