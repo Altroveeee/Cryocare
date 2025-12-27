@@ -417,6 +417,8 @@ function renderSection3() {
 
     if (state.appPhase === 'loading') return;
 
+    renderInfoButton();
+
     const page = PAGES[state.currentPageIndex];
     const content = page.content;
 
@@ -426,6 +428,33 @@ function renderSection3() {
     if (content.type === 'curved-buttons') {
         renderCurvedButtons(content, page.id);
     }
+}
+
+function renderInfoButton() {
+    const size = 30;
+    const btn = document.createElement('div');
+    btn.className = 'round-button';
+    
+    Object.assign(btn.style, {
+        width: `${size}px`,
+        height: `${size}px`,
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10
+    });
+
+    const img = document.createElement('img');
+    img.src = 'assets/defaults/info.png';
+    btn.appendChild(img);
+
+    btn.onclick = () => {
+        // Placeholder for info button logic
+        console.log("Info button clicked");
+    };
+
+    dom.section3.appendChild(btn);
 }
 
 function shouldHideControls(pageId) {
