@@ -1,35 +1,59 @@
 {
     "kurd": {
+        "VARIABLES": {
+            "petName": "Kurdo",
+            "cultureName": "Kurdish"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "amazigh": {
+        "VARIABLES": {
+            "petName": "Mazigh",
+            "cultureName": "Amazigh"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "maori": {
+        "VARIABLES": {
+            "petName": "Kauri",
+            "cultureName": "Maori"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "palestinian": {
+        "VARIABLES": {
+            "petName": "Handala",
+            "cultureName": "Palestinian"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "uyghurus": {
+        "VARIABLES": {
+            "petName": "Yultuz",
+            "cultureName": "Uyghur"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "guarani": {
+        "VARIABLES": {
+            "petName": "Jaguarete",
+            "cultureName": "Guarani"
+        },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
             "CORRECT_DRESS_ID": "1"

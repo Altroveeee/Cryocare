@@ -28,5 +28,9 @@
     "RULES": {
         "CORRECT_FOOD_ORDER": ["2", "1", "3"],
         "CORRECT_DRESS_ID": "1"
+    },
+    "TEXT_TEMPLATES": {
+        "WELCOME": "Hello! Thank you for adopting me!",
+        "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian"
     }
 }   

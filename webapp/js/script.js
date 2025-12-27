@@ -75,6 +75,14 @@ const state = {
         touchEndX: 0,
         isMouseDragging: false,
         isGifPlaying: false,
+        tempContent: {
+            top: null,
+            bot: null
+        },
+        tempTimers: {
+            top: null,
+            bot: null
+        }
     }
 };
 
@@ -95,6 +103,42 @@ const dom = {
     navArrowLeft: document.getElementById('nav-arrow-left'),
     navArrowRight: document.getElementById('nav-arrow-right'),
 };
+
+/* ==========================================================================
+   TEXT SYSTEM HELPERS
+   ========================================================================== */
+
+function getText(key, params = {}) {
+    const template = CONFIG.TEXT_TEMPLATES[key] || "";
+    const cultureVars = CULTURE_CONFIGS[state.currentCulture] ? CULTURE_CONFIGS[state.currentCulture].VARIABLES : {};
+    
+    const allParams = { ...cultureVars, ...params };
+
+    return template.replace(/{(\w+)}/g, (_, k) => allParams[k] || "");
+}
+
+function showTempMessage(zone, key, duration = 3000) {
+    if (!state.ui.tempContent[zone] && !state.ui.tempTimers[zone]) {
+        // Only if not already showing something or reset
+    }
+
+    if (state.ui.tempTimers[zone]) {
+        clearTimeout(state.ui.tempTimers[zone]);
+    }
+
+    state.ui.tempContent[zone] = {
+        type: 'text',
+        value: getText(key)
+    };
+
+    updateUI();
+
+    state.ui.tempTimers[zone] = setTimeout(() => {
+        state.ui.tempContent[zone] = null;
+        state.ui.tempTimers[zone] = null;
+        updateUI();
+    }, duration);
+}
 
 /* ==========================================================================
    GAME LOGIC HANDLERS
@@ -144,6 +188,9 @@ function resetGame(culture = null) {
 
     // 5. Update UI
     state.ui.isGifPlaying = false;
+    state.ui.tempContent = { top: null, bot: null };
+    state.ui.tempTimers = { top: null, bot: null };
+    
     updateUI();
     resetInactivityTimer();
 }
@@ -258,16 +305,21 @@ function updateContentZones() {
 }
 
 function determineTopZoneContent() {
-    // Show Welcome Text during loading phases
+    // Priority 1: Temporary Content
+    if (state.ui.tempContent.top) {
+        return state.ui.tempContent.top;
+    }
+
+    // Priority 2: Loading Phase
     if (state.appPhase === 'loading' && (state.loadingStep === 'welcome' || state.loadingStep === 'instructions')) {
         return {
             type: 'text',
-            value: 'Welcome',
-            className: 'welcome-text' // Add a class for styling if needed
+            value: getText('WELCOME'),
+            className: 'welcome-text'
         };
     }
 
-    // Example: Show Ritual Button if conditions are met
+    // Priority 3: Gameplay
     const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
     const isRitualDone = state.progress.ritual;
     const isOnDressPage = state.currentPageIndex === 2; // Index for 'dress' page
@@ -285,12 +337,17 @@ function determineTopZoneContent() {
 }
 
 function determineBotZoneContent() {
-    // Show Instructions Text during instructions phase
+    // Priority 1: Temporary Content
+    if (state.ui.tempContent.bot) {
+        return state.ui.tempContent.bot;
+    }
+
+    // Priority 2: Loading Phase
     if (state.appPhase === 'loading' && state.loadingStep === 'instructions') {
         return {
             type: 'text',
-            value: 'Get ready...',
-            className: 'instructions-text' // Add a class for styling if needed
+            value: getText('INTRO'),
+            className: 'instructions-text'
         };
     }
 
@@ -922,7 +979,7 @@ async function handleStartupSequence() {
     updateUI();
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Phase 5: Gameplay
+    // Phase 4: Gameplay
     state.appPhase = 'gameplay';
     updateUI(); // Reveal game UI
 }
