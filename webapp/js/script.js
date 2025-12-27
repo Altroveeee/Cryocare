@@ -214,6 +214,7 @@ function handleFoodInteraction(buttonId) {
 
             // Play Baking GIF
             playGif(CONFIG.ASSETS.PET_BAKING);
+            showTemporaryText('COOKING', 'bot', CONFIG.GIF_DURATION_MS);
         }
         return true;
     } else {

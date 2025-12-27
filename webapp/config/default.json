@@ -30,6 +30,7 @@
     },
     "TEXT_TEMPLATES": {
         "WELCOME": "Hello! Thank you for adopting me!",
-        "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian"
+        "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian",
+        "COOKING": "Cooking..."
     }
 }   
