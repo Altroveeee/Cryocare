@@ -185,8 +185,7 @@ body {
     right: 15px;
 }
 
-.nav-arrow,
-.nav-shadow {
+.nav-arrow {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -194,13 +193,3 @@ body {
     width: 100%;
     height: auto;
 }
-
-/* #nav-shadow-left {
-    transform: translate(-7%, -50%);
-    width: 800%;
-}
-
-#nav-shadow-right {
-    transform: translate(-93%, -50%);
-    width: 800%;
-} */

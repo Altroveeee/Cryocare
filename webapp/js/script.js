@@ -94,8 +94,6 @@ const dom = {
     navContainerRight: document.getElementById('nav-container-right'),
     navArrowLeft: document.getElementById('nav-arrow-left'),
     navArrowRight: document.getElementById('nav-arrow-right'),
-    navShadowLeft: document.getElementById('nav-shadow-left'),
-    navShadowRight: document.getElementById('nav-shadow-right'),
 };
 
 /* ==========================================================================
@@ -126,8 +124,6 @@ function resetGame(culture = null) {
     // Set Navigation Arrow Images
     if (CONFIG.ASSETS.ARROW_LEFT) dom.navArrowLeft.src = CONFIG.ASSETS.ARROW_LEFT;
     if (CONFIG.ASSETS.ARROW_RIGHT) dom.navArrowRight.src = CONFIG.ASSETS.ARROW_RIGHT;
-    if (CONFIG.ASSETS.ARROW_SHADOW_LEFT) dom.navShadowLeft.src = CONFIG.ASSETS.ARROW_SHADOW_LEFT;
-    if (CONFIG.ASSETS.ARROW_SHADOW_RIGHT) dom.navShadowRight.src = CONFIG.ASSETS.ARROW_SHADOW_RIGHT;
 
     // 2. Reset Progress
     state.progress = {
@@ -768,6 +764,9 @@ async function init() {
     // Load Configuration
     await loadConfiguration();
 
+    // Initialize game state (select culture) immediately
+    resetGame();
+
     // Start loading sequence
     // handleStartupSequence(); // Moved to wakeUp()
     setupEventListeners();
@@ -805,7 +804,7 @@ async function handleStartupSequence() {
 
     // Phase 5: Gameplay
     state.appPhase = 'gameplay';
-    resetGame(); // Initialize actual game state
+    updateUI(); // Reveal game UI
 }
 
 document.addEventListener('DOMContentLoaded', init);
