@@ -3,7 +3,6 @@
     "GIF_DURATION_MS": 4000,
     "UI": {
         "BUTTON_RADIUS": 100,
-        "DROP_ZONE_RADIUS": 30,
         "SWIPE_THRESHOLD": 50,
         "SHAKE_THRESHOLD": 20
     },

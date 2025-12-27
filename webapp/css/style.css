@@ -43,8 +43,7 @@ body {
     flex: 1;
     position: relative;
     /* Needed for absolute positioning of buttons */
-    overflow: hidden;
-    /* To keep buttons within the oval shape */
+    /* overflow: hidden; Removed to allow buttons to overlap section2 */
 }
 
 #black-screen-overlay {

@@ -560,7 +560,7 @@ function renderCurvedButtons(content, pageId) {
         const y = radius * Math.sin(rad);
 
         const initialLeft = `calc(50% + ${x}px - ${buttonSize / 2}px)`;
-        const initialTop = `calc(0% + ${y}px - ${buttonSize / 2}px)`;
+        const initialTop = `calc(-50% + ${y}px - ${buttonSize / 2}px)`;
 
         button.style.left = initialLeft;
         button.style.top = initialTop;
