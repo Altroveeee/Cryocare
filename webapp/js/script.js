@@ -171,6 +171,7 @@ function handleFoodInteraction(buttonId) {
         return true;
     } else {
         console.log(`Incorrect food item. Expected ${expectedId}, got ${buttonId}`);
+        triggerArduino(); // Trigger Arduino on wrong choice
         return false;
     }
 }
@@ -183,20 +184,14 @@ function handleDressInteraction(buttonId) {
     const dressPattern = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
     state.gameplay.currentPetImage = getAssetPath(dressPattern);
 
-    return true;
-}
-
-function handleRitualInteraction(buttonId) {
-    if (state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID) {
-        state.progress.ritual = true;
-
-        // Play Ritual GIF
-        playGif(CONFIG.ASSETS.PET_RITUAL);
-    } else {
-        state.gameplay.chosenDressId = null;
-        // Optional: Maybe revert image if wrong dress? 
-        // For now, keeping current behavior.
+    if (state.gameplay.chosenDressId !== CONFIG.RULES.CORRECT_DRESS_ID) {
+        console.log('Incorrect dress chosen');
+        triggerArduino(); // Trigger Arduino on wrong choice
     }
+    else {
+        console.log('Correct dress chosen');
+    }
+
     return true;
 }
 
@@ -223,9 +218,6 @@ function handleButtonPress(buttonId, pageId) {
             break;
         case 'dress':
             isAccepted = handleDressInteraction(buttonId);
-            break;
-        case 'ritual':
-            isAccepted = handleRitualInteraction(buttonId);
             break;
     }
 
