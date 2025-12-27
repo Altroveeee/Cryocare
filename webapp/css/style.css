@@ -80,6 +80,10 @@ body {
     align-items: center;
     z-index: 20;
     /* Ensure it is above other elements */
+
+    span {
+        font-size: large;
+    }
 }
 
 #content-zone-top {

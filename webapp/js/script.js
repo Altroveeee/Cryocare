@@ -55,6 +55,7 @@ const PAGES = [
 const state = {
     appPhase: 'loading', // 'loading' | 'gameplay'
     loadingStep: 'static', // 'static' | 'animation'
+    hasStarted: false,
     currentCulture: 'kurd',
     currentPageIndex: 0,
     progress: {
@@ -269,6 +270,15 @@ function updateContentZones() {
 }
 
 function determineTopZoneContent() {
+    // Show Welcome Text during loading phases
+    if (state.appPhase === 'loading' && (state.loadingStep === 'welcome' || state.loadingStep === 'instructions')) {
+        return {
+            type: 'text',
+            value: 'Welcome',
+            className: 'welcome-text' // Add a class for styling if needed
+        };
+    }
+
     // Example: Show Ritual Button if conditions are met
     const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
     const isRitualDone = state.progress.ritual;
@@ -287,10 +297,15 @@ function determineTopZoneContent() {
 }
 
 function determineBotZoneContent() {
-    // Placeholder for future logic (e.g., subtitles, instructions)
-    if (state.appPhase === 'loading') {
-        // Example: return { type: 'text', value: 'Loading...' };
+    // Show Instructions Text during instructions phase
+    if (state.appPhase === 'loading' && state.loadingStep === 'instructions') {
+        return {
+            type: 'text',
+            value: 'Get ready...',
+            className: 'instructions-text' // Add a class for styling if needed
+        };
     }
+
     return null;
 }
 
@@ -382,8 +397,11 @@ function updatePetImage() {
     if (state.appPhase === 'loading') {
         if (state.loadingStep === 'static') {
             newImagePath = CONFIG.ASSETS.LOADING_STATIC;
-        } else {
+        } else if (state.loadingStep === 'animation') {
             newImagePath = CONFIG.ASSETS.LOADING_ANIMATION;
+        } else {
+            // 'welcome' or 'instructions'
+            newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
     } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
         const count = state.gameplay.foodSequence.length;
@@ -724,6 +742,12 @@ function showBlackScreen() {
 function wakeUp() {
     if (dom.blackScreenOverlay.style.display !== 'none') {
         dom.blackScreenOverlay.style.display = 'none';
+        
+        if (!state.hasStarted) {
+            state.hasStarted = true;
+            handleStartupSequence();
+        }
+        
         resetInactivityTimer();
     }
 }
@@ -745,7 +769,7 @@ async function init() {
     await loadConfiguration();
 
     // Start loading sequence
-    handleStartupSequence();
+    // handleStartupSequence(); // Moved to wakeUp()
     setupEventListeners();
 }
 
@@ -769,7 +793,17 @@ async function handleStartupSequence() {
     const animDuration = CONFIG.GIF_DURATION_MS || 3000;
     await new Promise(resolve => setTimeout(resolve, animDuration));
 
-    // Phase 3: Gameplay
+    // Phase 3: Welcome Text
+    state.loadingStep = 'welcome';
+    updateUI();
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Phase 4: Instructions Text
+    state.loadingStep = 'instructions';
+    updateUI();
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Phase 5: Gameplay
     state.appPhase = 'gameplay';
     resetGame(); // Initialize actual game state
 }
