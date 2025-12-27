@@ -46,7 +46,6 @@
 
         <div class="section" id="section1">
             <!-- Prima sezione dell’interfaccia -->
-            <button id="test">Test arduino</button>
 
             <div class="progress-bar-container">
                 <!-- Contenitore della barra di avanzamento -->
@@ -64,19 +63,14 @@
             <div class="pet-container">
                 <!-- Contenitore principale del pet -->
 
-                <div id="pet-content-zone">
-                    <!-- Zona interattiva del pet -->
-
-                    <div id="ritual-trigger-btn" class="round-button" style="display:none;">
-                        <!-- Pulsante rotondo per attivare un rituale (inizialmente nascosto) -->
-
-                        <img id="ritual-trigger-img" src="assets/defaults/ritual.png" alt="Ritual">
-                        <!-- Icona del rituale -->
-                    </div>
-                </div>
+                <!-- TOP ZONE: For content above the pet (e.g., ritual button, speech bubbles) -->
+                <div id="content-zone-top" class="content-zone"></div>
 
                 <img id="pet-image" src="" alt="Pet Image">
                 <!-- Immagine del pet (probabilmente impostata via JavaScript) -->
+
+                <!-- BOT ZONE: For content below the pet (e.g., subtitles, instructions) -->
+                <div id="content-zone-bot" class="content-zone"></div>
             </div>
         </div>
 
@@ -94,4 +88,5 @@
 
     <!-- <button id="servoButton">Attiva Servo</button>  -->
 </body>
+
 </html>

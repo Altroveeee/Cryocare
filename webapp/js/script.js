@@ -1,5 +1,3 @@
-
-
 // Oggetto che conterrà la configurazione di default caricata da JSON
 let CONFIG = {};
 
@@ -67,7 +65,7 @@ const state = {
     gameplay: {
         foodSequence: [],
         chosenDressId: null,
-        currentPetImage: null, 
+        currentPetImage: null,
     },
     ui: {
         isAnyButtonDragging: false,
@@ -89,9 +87,8 @@ const dom = {
     blackScreenOverlay: document.getElementById('black-screen-overlay'),
     petImage: document.getElementById('pet-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
-    petContentZone: document.getElementById('pet-content-zone'),
-    ritualTriggerBtn: document.getElementById('ritual-trigger-btn'),
-    ritualTriggerImg: document.getElementById('ritual-trigger-img'),
+    contentZoneTop: document.getElementById('content-zone-top'),
+    contentZoneBot: document.getElementById('content-zone-bot'),
     navContainerLeft: document.getElementById('nav-container-left'),
     navContainerRight: document.getElementById('nav-container-right'),
     navArrowLeft: document.getElementById('nav-arrow-left'),
@@ -167,9 +164,9 @@ function handleFoodInteraction(buttonId) {
             console.log('Food order is correct');
             state.progress.food = true;
             state.gameplay.foodSequence = [];
-            
+
             // Call updateUI here to hide buttons before GIF starts
-            updateUI(); 
+            updateUI();
 
             // Play Baking GIF
             playGif(CONFIG.ASSETS.PET_BAKING);
@@ -184,18 +181,18 @@ function handleFoodInteraction(buttonId) {
 function handleDressInteraction(buttonId) {
     state.gameplay.chosenDressId = buttonId;
     state.progress.dress = true;
-    
+
     // Update Pet Image
     const dressPattern = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
     state.gameplay.currentPetImage = getAssetPath(dressPattern);
-    
+
     return true;
 }
 
 function handleRitualInteraction(buttonId) {
     if (state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID) {
         state.progress.ritual = true;
-        
+
         // Play Ritual GIF
         playGif(CONFIG.ASSETS.PET_RITUAL);
     } else {
@@ -220,7 +217,7 @@ function playGif(assetPattern) {
 
 function handleButtonPress(buttonId, pageId) {
     console.log(`Button pressed: ${buttonId} on page: ${pageId}`);
-    
+
     let isAccepted = false;
 
     switch (pageId) {
@@ -238,7 +235,7 @@ function handleButtonPress(buttonId, pageId) {
     if (isAccepted && !state.ui.isGifPlaying) {
         updateUI();
     }
-    
+
     return isAccepted;
 }
 
@@ -250,18 +247,91 @@ function triggerRitual() {
     updateUI();
 }
 
-function updateContentZone() {
+/**
+ * Updates the content zones (Top and Bot) based on the current state.
+ */
+function updateContentZones() {
+    // 1. Clear Zones
+    dom.contentZoneTop.innerHTML = '';
+    dom.contentZoneBot.innerHTML = '';
+
+    // 2. Determine Content for Top Zone
+    const topContent = determineTopZoneContent();
+    if (topContent) {
+        renderZoneContent(dom.contentZoneTop, topContent);
+    }
+
+    // 3. Determine Content for Bot Zone
+    const botContent = determineBotZoneContent();
+    if (botContent) {
+        renderZoneContent(dom.contentZoneBot, botContent);
+    }
+}
+
+function determineTopZoneContent() {
+    // Example: Show Ritual Button if conditions are met
     const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
     const isRitualDone = state.progress.ritual;
     const isOnDressPage = state.currentPageIndex === 2; // Index for 'dress' page
     
     if (isDressCorrect && !isRitualDone && !state.ui.isGifPlaying && isOnDressPage) {
-        if (CONFIG.ASSETS && CONFIG.ASSETS.RITUAL_BUTTON_ICON) {
-            dom.ritualTriggerImg.src = CONFIG.ASSETS.RITUAL_BUTTON_ICON;
+        return {
+            type: 'button',
+            image: CONFIG.ASSETS.RITUAL_BUTTON_ICON || 'assets/defaults/ritual.png',
+            className: 'ritual-btn',
+            action: triggerRitual
+        };
+    }
+
+    return null;
+}
+
+function determineBotZoneContent() {
+    // Placeholder for future logic (e.g., subtitles, instructions)
+    if (state.appPhase === 'loading') {
+        // Example: return { type: 'text', value: 'Loading...' };
+    }
+    return null;
+}
+
+/**
+ * Renders a content definition into a specific container.
+ * @param {HTMLElement} container 
+ * @param {Object} contentDef { type, value/image, action, className, style }
+ */
+function renderZoneContent(container, contentDef) {
+    if (!contentDef) return;
+
+    if (contentDef.type === 'button') {
+        const btn = document.createElement('div');
+        btn.className = contentDef.className || 'round-button';
+        if (contentDef.style) Object.assign(btn.style, contentDef.style);
+        
+        const img = document.createElement('img');
+        img.src = contentDef.image;
+        btn.appendChild(img);
+
+        if (contentDef.action) {
+            btn.addEventListener('click', contentDef.action);
+            btn.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                contentDef.action();
+            }, { passive: true });
         }
-        dom.ritualTriggerBtn.style.display = 'flex'; // Changed to flex for centering
-    } else {
-        dom.ritualTriggerBtn.style.display = 'none';
+
+        container.appendChild(btn);
+    } else if (contentDef.type === 'text') {
+        const span = document.createElement('span');
+        span.textContent = contentDef.value;
+        if (contentDef.className) span.className = contentDef.className;
+        if (contentDef.style) Object.assign(span.style, contentDef.style);
+        container.appendChild(span);
+    } else if (contentDef.type === 'image') {
+        const img = document.createElement('img');
+        img.src = contentDef.image;
+        if (contentDef.className) img.className = contentDef.className;
+        if (contentDef.style) Object.assign(img.style, contentDef.style);
+        container.appendChild(img);
     }
 }
 
@@ -276,7 +346,7 @@ function getAssetPath(pattern) {
 function updateUI() {
     updateProgressBar();
     updatePetImage();
-    updateContentZone();
+    updateContentZones(); // Updated to generic function
     renderSection3();
 
     // Update Navigation Arrows
@@ -288,7 +358,6 @@ function updateUI() {
         dom.navContainerRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
     }
 }
-
 function updateProgressBar() {
     if (state.appPhase === 'loading') {
         dom.progressBarImage.style.display = 'none';
@@ -309,7 +378,7 @@ function updatePetImage() {
     if (state.ui.isGifPlaying) return;
 
     let newImagePath;
-    
+
     if (state.appPhase === 'loading') {
         if (state.loadingStep === 'static') {
             newImagePath = CONFIG.ASSETS.LOADING_STATIC;
@@ -379,7 +448,7 @@ function renderCurvedButtons(content, pageId) {
     // as we drop into Section 2.
 
     const numButtons = content.count;
-    const buttonSize = 40 + 40 / numButtons; 
+    const buttonSize = 40 + 40 / numButtons;
 
     const radius = CONFIG.UI.BUTTON_RADIUS;
     const startAngle = 180;
@@ -392,7 +461,7 @@ function renderCurvedButtons(content, pageId) {
         if (!shouldButtonBeVisible(pageId, id)) {
             button.style.display = 'none';
         }
-        
+
         const angle = startAngle - (index + 1) * angleStep;
         const rad = angle * Math.PI / 180;
         const x = radius * Math.cos(rad);
@@ -433,7 +502,7 @@ function createButtonElement(id, pageId, size) {
     button.style.height = `${size}px`;
 
     const img = document.createElement('img');
-    
+
     // Construct Path: assets/{culture}/buttons/{pageId}{id}.png
     const pathPrefix = getAssetPath(CONFIG.ASSETS.BUTTON_PREFIX);
     const imgName = `${pageId}${id}.png`;
@@ -453,16 +522,16 @@ function createButtonElement(id, pageId, size) {
    ========================================================================== */
 
 function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
-    
+
     const startDrag = (e) => {
         if (state.ui.isAnyButtonDragging) return;
         e.stopPropagation();
-        
+
         state.ui.isAnyButtonDragging = true;
         let isDraggingThis = true;
 
         const rect = button.getBoundingClientRect();
-        
+
         // Fixed positioning to allow dragging outside Section 3
         button.style.position = 'fixed';
         button.style.left = `${rect.left}px`;
@@ -473,7 +542,7 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
+
         const offsetX = clientX - rect.left;
         const offsetY = clientY - rect.top;
 
@@ -483,7 +552,7 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
 
             const cx = e.touches ? e.touches[0].clientX : e.clientX;
             const cy = e.touches ? e.touches[0].clientY : e.clientY;
-            
+
             const newX = cx - offsetX;
             const newY = cy - offsetY;
 
@@ -500,7 +569,7 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
 
             // Target is Section 2
             const section2 = document.getElementById('section2');
-            
+
             let droppedSuccessfully = false;
 
             if (checkDropZoneCollision(button, section2)) {
@@ -541,9 +610,9 @@ function checkDropZoneCollision(button, targetElement) {
     const targetRect = targetElement.getBoundingClientRect();
 
     return !(
-        btnRect.right < targetRect.left || 
-        btnRect.left > targetRect.right || 
-        btnRect.bottom < targetRect.top || 
+        btnRect.right < targetRect.left ||
+        btnRect.left > targetRect.right ||
+        btnRect.bottom < targetRect.top ||
         btnRect.top > targetRect.bottom
     );
 }
@@ -557,28 +626,20 @@ function setupEventListeners() {
         state.ui.touchStartX = e.changedTouches[0].screenX;
     }, { passive: true });
 
-    dom.ovalContainer.addEventListener('touchend', (e) => {
-        state.ui.touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    });
-
-    // Ritual Button Listener
-    dom.ritualTriggerBtn.addEventListener('click', triggerRitual);
-    dom.ritualTriggerBtn.addEventListener('touchstart', (e) => {
-        e.stopPropagation(); // Prevent swipe interference
-        triggerRitual();
-    }, { passive: true });
-
-    // Nav Arrows Listeners
-    dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
-    dom.navArrowLeft.addEventListener('touchstart', (e) => {
-        e.stopPropagation(); 
-        handleNavClick('prev');
-    }, { passive: true });
-
+        dom.ovalContainer.addEventListener('touchend', (e) => {
+            state.ui.touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+    
+        // Nav Arrows Listeners
+        dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
+        dom.navArrowLeft.addEventListener('touchstart', (e) => {
+            e.stopPropagation(); 
+            handleNavClick('prev');
+        }, { passive: true });
     dom.navArrowRight.addEventListener('click', () => handleNavClick('next'));
     dom.navArrowRight.addEventListener('touchstart', (e) => {
-        e.stopPropagation(); 
+        e.stopPropagation();
         handleNavClick('next');
     }, { passive: true });
 
@@ -647,10 +708,10 @@ function handleShake(event) {
     const x = acc.x || 0;
     const y = acc.y || 0;
     const z = acc.z || 0;
-    const totalAcc = Math.sqrt(x**2 + y**2 + z**2);
-    
-    const threshold = (!event.accelerationIncludingGravity && event.acceleration) 
-        ? CONFIG.UI.SHAKE_THRESHOLD / 2 
+    const totalAcc = Math.sqrt(x ** 2 + y ** 2 + z ** 2);
+
+    const threshold = (!event.accelerationIncludingGravity && event.acceleration)
+        ? CONFIG.UI.SHAKE_THRESHOLD / 2
         : CONFIG.UI.SHAKE_THRESHOLD;
 
     if (totalAcc > threshold) wakeUp();
@@ -684,13 +745,13 @@ async function init() {
     await loadConfiguration();
 
     // Start loading sequence
-    handleStartupSequence(); 
+    handleStartupSequence();
     setupEventListeners();
 }
 
 async function handleStartupSequence() {
     console.log('Starting App Sequence...');
-    
+
     // Phase 1: Static Loading Image
     state.appPhase = 'loading';
     state.loadingStep = 'static';
@@ -702,6 +763,7 @@ async function handleStartupSequence() {
     // Phase 2: Animation
     state.loadingStep = 'animation';
     updateUI();
+    triggerArduino(); // Send command to Arduino
 
     // Wait for animation (using GIF_DURATION_MS or default 3s)
     const animDuration = CONFIG.GIF_DURATION_MS || 3000;
