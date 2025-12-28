@@ -932,7 +932,7 @@ function resetInactivityTimer() {
 }
 
 function triggerArduino() {
-    fetch("http://192.168.1.74/servo")
+    fetch("http://192.168.1.118/servo")
         .then(res => res.text())
         .then(text => console.log("Risposta ESP32:", text))
         .catch(err => console.error("Errore:", err));

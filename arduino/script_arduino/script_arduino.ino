@@ -9,6 +9,13 @@ WebServer server(80);
 const char* ssid = "TIM-29033219";
 const char* password = "Jm5OgoQustxqNZ7N75FhZ6i0";
 
+// Static IP configuration
+IPAddress staticIP(192, 168, 1, 118); // ESP32 static IP
+IPAddress gateway(192, 168, 1, 1);    // IP Address of your network gateway (router)
+IPAddress subnet(255, 255, 255, 0);   // Subnet mask
+IPAddress primaryDNS(192, 168, 1, 1); // Primary DNS (optional)
+IPAddress secondaryDNS(0, 0, 0, 0);   // Secondary DNS (optional)
+
 void handleServo() {
   Serial.println("Comando ricevuto: muovi servo");
 
@@ -32,6 +39,15 @@ void setup() {
     delay(500);
     Serial.println(".");
   }
+
+  // Configuring static IP
+  Serial.println("Configuring static IP");
+  if(!WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS)) {
+    Serial.println("Failed to configure Static IP");
+  } else {
+    Serial.println("Static IP configured!");
+  }
+
   Serial.println("\nConnesso!");
   Serial.print("IP ESP32: ");
   Serial.println(WiFi.localIP());
