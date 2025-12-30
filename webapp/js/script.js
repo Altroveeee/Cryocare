@@ -541,7 +541,7 @@ function renderCurvedButtons(content, pageId) {
     // as we drop into Section 2.
 
     const numButtons = content.count;
-    const buttonSize = 40 + 40 / numButtons;
+    const buttonSize = 60 + 40 / numButtons;
 
     const radius = CONFIG.UI.BUTTON_RADIUS;
     const startAngle = 180;
