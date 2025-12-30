@@ -94,6 +94,8 @@ const dom = {
     section3: document.getElementById('section3'),
     ovalContainer: document.getElementById('oval-container'),
     blackScreenOverlay: document.getElementById('black-screen-overlay'),
+    infoOverlay: document.getElementById('info-overlay'),
+    infoContent: document.getElementById('info-content'),
     petImage: document.getElementById('pet-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
     contentZoneTop: document.getElementById('content-zone-top'),
@@ -508,8 +510,14 @@ function renderInfoButton() {
     btn.appendChild(img);
 
     btn.onclick = () => {
-        // Placeholder for info button logic
-        console.log("Info button clicked");
+        const pageId = PAGES[state.currentPageIndex].id;
+        let textKey = 'INFO_HOME'; // Default
+
+        if (pageId === 'food') textKey = 'INFO_FOOD';
+        else if (pageId === 'dress') textKey = 'INFO_DRESS';
+
+        dom.infoContent.innerText = getText(textKey);
+        dom.infoOverlay.style.display = 'flex';
     };
 
     dom.section3.appendChild(btn);
@@ -725,16 +733,21 @@ function setupEventListeners() {
         });
     
         // Nav Arrows Listeners
-        dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
-        dom.navArrowLeft.addEventListener('touchstart', (e) => {
-            e.stopPropagation(); 
-            handleNavClick('prev');
-        }, { passive: true });
+    dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
+    dom.navArrowLeft.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); 
+        handleNavClick('prev');
+    }, { passive: true });
     dom.navArrowRight.addEventListener('click', () => handleNavClick('next'));
     dom.navArrowRight.addEventListener('touchstart', (e) => {
         e.stopPropagation();
         handleNavClick('next');
     }, { passive: true });
+
+    // Info Overlay Listener
+    dom.infoOverlay.addEventListener('click', () => {
+        dom.infoOverlay.style.display = 'none';
+    });
 
     setupMouseNavigation();
     window.addEventListener('devicemotion', handleShake);

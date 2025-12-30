@@ -31,6 +31,9 @@
     "TEXT_TEMPLATES": {
         "WELCOME": "Hello! Thank you for adopting me!",
         "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian",
-        "COOKING": "Cooking..."
+        "COOKING": "Cooking...",
+        "INFO_HOME": "Meet the Guardians need to gain his trust",
+        "INFO_FOOD": "Select the ingredients in the correct order",
+        "INFO_DRESS": "Choose the proper dress for the ritual"
     }
 }   

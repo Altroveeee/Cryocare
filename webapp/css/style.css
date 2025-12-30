@@ -56,6 +56,30 @@ body {
     z-index: 100;
 }
 
+/* Info Overlay Styles */
+#info-overlay {
+    position: fixed;
+    width: 95vw;
+    height: 95vh;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 200;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+#info-content {
+    background: transparent;
+    padding: 20px;
+    max-width: 80%;
+    text-align: center;
+    font-size: large;
+    font-family: sans-serif;
+    pointer-events: none; /* Allows click to pass through to overlay for closing */
+}
+
 .pet-container {
     max-width: 70vw;
     position: relative;
