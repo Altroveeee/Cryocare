@@ -745,7 +745,8 @@ function setupEventListeners() {
 
     // Startup Sequence Interaction
     const handleStaticClick = () => {
-        if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+        const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
+        if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
             continueStartupSequence();
         }
     };
@@ -753,8 +754,9 @@ function setupEventListeners() {
     // Attach to body or specific container to ensure catch
     document.body.addEventListener('click', handleStaticClick);
     document.body.addEventListener('touchstart', (e) => {
+        const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
         // Only trigger if not interacting with other UI elements essentially
-        if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+        if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
             continueStartupSequence();
         }
     }, { passive: true });
