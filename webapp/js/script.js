@@ -435,7 +435,7 @@ function updateProgressBar() {
 }
 
 function updatePetImage() {
-    // If a GIF is playing, do not override it
+    // If a GIF is playing (gameplay specific), do not override it
     if (state.ui.isGifPlaying) return;
 
     let newImagePath;
@@ -443,10 +443,10 @@ function updatePetImage() {
     if (state.appPhase === 'loading') {
         if (state.loadingStep === 'static') {
             newImagePath = CONFIG.ASSETS.LOADING_STATIC;
-        } else if (state.loadingStep === 'animation') {
+        } else if (['animation', 'welcome', 'instructions'].includes(state.loadingStep)) {
             newImagePath = CONFIG.ASSETS.LOADING_ANIMATION;
         } else {
-            // 'welcome' or 'instructions'
+            // Fallback
             newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
     } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
@@ -743,6 +743,22 @@ function setupEventListeners() {
     dom.petImage.addEventListener('mousedown', startUndressDrag);
     dom.petImage.addEventListener('touchstart', startUndressDrag, { passive: false });
 
+    // Startup Sequence Interaction
+    const handleStaticClick = () => {
+        if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+            continueStartupSequence();
+        }
+    };
+    
+    // Attach to body or specific container to ensure catch
+    document.body.addEventListener('click', handleStaticClick);
+    document.body.addEventListener('touchstart', (e) => {
+        // Only trigger if not interacting with other UI elements essentially
+        if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+            continueStartupSequence();
+        }
+    }, { passive: true });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') wakeUp();
         // Debug: press 'R' to randomize culture
@@ -953,29 +969,40 @@ async function init() {
 async function handleStartupSequence() {
     console.log('Starting App Sequence...');
 
-    // Phase 1: Static Loading Image
+    // Phase 1: Static Loading Image. Waits for user click/touch.
     state.appPhase = 'loading';
     state.loadingStep = 'static';
     updateUI();
+}
 
-    // Wait 3 seconds
-    await new Promise(resolve => setTimeout(resolve, 3000));
+async function continueStartupSequence() {
+    // Check to avoid double triggering or triggering in wrong phase
+    if (state.loadingStep !== 'static') return;
+    
+    console.log('Continuing Startup Sequence...');
 
-    // Phase 2: Animation
-    state.loadingStep = 'animation';
+    // Fade away effect (1 second)
+    dom.petImage.style.transition = 'opacity 1s ease-in-out';
+    dom.petImage.style.opacity = '0';
+    
+    // Wait for the fade away to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Phase 2: Animation + Welcome Text
+    // Note: updatePetImage now shows the GIF during 'welcome' step
+    state.loadingStep = 'welcome'; 
+    
+    // Reset opacity to show the new content
+    dom.petImage.style.opacity = '1';
+    
     updateUI();
+    
     triggerArduino(); // Send command to Arduino
 
-    // Wait for animation (using GIF_DURATION_MS or default 3s)
-    const animDuration = CONFIG.GIF_DURATION_MS || 3000;
-    await new Promise(resolve => setTimeout(resolve, animDuration));
-
-    // Phase 3: Welcome Text
-    state.loadingStep = 'welcome';
-    updateUI();
+    // Wait for Welcome text reading time (approx 3s or GIF duration)
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Phase 4: Instructions Text
+    // Phase 3: Instructions Text (GIF continues because of updatePetImage logic)
     state.loadingStep = 'instructions';
     updateUI();
     await new Promise(resolve => setTimeout(resolve, 3000));

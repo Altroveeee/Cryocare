@@ -21,7 +21,7 @@
         "PROGRESS_BAR_PREFIX": "assets/defaults/progress_bar/bar_",
         "BUTTON_PREFIX": "assets/{culture}/buttons/",
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
-        "LOADING_ANIMATION": "assets/defaults/loading/jump.gif"
+        "LOADING_ANIMATION": "assets/defaults/loading/wave.gif"
     },
     "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
