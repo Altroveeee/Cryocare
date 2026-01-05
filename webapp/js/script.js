@@ -67,6 +67,7 @@ const state = {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: null,
+        isShowingBakedFood: false,
     },
     ui: {
         isAnyButtonDragging: false,
@@ -183,6 +184,7 @@ function resetGame(culture = null) {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
+        isShowingBakedFood: false,
     };
 
     // 4. Reset Navigation
@@ -215,8 +217,12 @@ function handleFoodInteraction(buttonId) {
             updateUI();
 
             // Play Baking GIF
-            playGif(CONFIG.ASSETS.PET_BAKING);
-            showTemporaryText('COOKING', 'bot', CONFIG.GIF_DURATION_MS);
+            showTempMessage('bot', 'COOKING', CONFIG.GIF_DURATION_MS);
+            playGif(CONFIG.ASSETS.PET_BAKING, () => {
+                // Show Baked Food after GIF
+                state.gameplay.isShowingBakedFood = true;
+                updateUI();
+            });
         }
         return true;
     } else {
@@ -245,7 +251,7 @@ function handleDressInteraction(buttonId) {
     return true;
 }
 
-function playGif(assetPattern) {
+function playGif(assetPattern, onComplete = null) {
     state.ui.isGifPlaying = true;
     const gifPath = getAssetPath(assetPattern);
     console.log(`Playing GIF: ${gifPath}`);
@@ -253,7 +259,11 @@ function playGif(assetPattern) {
 
     setTimeout(() => {
         state.ui.isGifPlaying = false;
-        updateUI(); // Restore the correct image
+        if (onComplete) {
+            onComplete();
+        } else {
+            updateUI(); // Restore the correct image (default behavior)
+        }
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -321,6 +331,15 @@ function determineTopZoneContent() {
             className: 'welcome-text'
         };
     }
+    
+    // Priority 2.5: Baked Food Display
+    if (state.gameplay.isShowingBakedFood) {
+        return {
+            type: 'text',
+            value: getText('FOOD_NAME'),
+            className: 'food-name-text'
+        };
+    }
 
     // Priority 3: Gameplay
     const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
@@ -343,6 +362,15 @@ function determineBotZoneContent() {
     // Priority 1: Temporary Content
     if (state.ui.tempContent.bot) {
         return state.ui.tempContent.bot;
+    }
+
+    // Priority 1.5: Baked Food Display
+    if (state.gameplay.isShowingBakedFood) {
+        return {
+            type: 'text',
+            value: getText('FOOD_DESCRIPTION'),
+            className: 'food-desc-text'
+        };
     }
 
     // Priority 2: Loading Phase
@@ -451,6 +479,8 @@ function updatePetImage() {
             // Fallback
             newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
+    } else if (state.gameplay.isShowingBakedFood) {
+        newImagePath = CONFIG.ASSETS.BAKED_FOOD;
     } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
         const count = state.gameplay.foodSequence.length;
         if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
@@ -756,21 +786,37 @@ function setupEventListeners() {
     dom.petImage.addEventListener('mousedown', startUndressDrag);
     dom.petImage.addEventListener('touchstart', startUndressDrag, { passive: false });
 
-    // Startup Sequence Interaction
-    const handleStaticClick = () => {
+    // Global Interaction (Startup Sequence & Baked Food Dismissal)
+    const handleGlobalClick = () => {
         const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
+        
+        // 1. Startup Sequence
         if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
             continueStartupSequence();
+        }
+
+        // 2. Dismiss Baked Food
+        if (!isBlackScreenVisible && state.gameplay.isShowingBakedFood) {
+             console.log('Dismissing baked food view');
+             state.gameplay.isShowingBakedFood = false;
+             updateUI();
         }
     };
     
     // Attach to body or specific container to ensure catch
-    document.body.addEventListener('click', handleStaticClick);
+    document.body.addEventListener('click', handleGlobalClick);
     document.body.addEventListener('touchstart', (e) => {
         const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
         // Only trigger if not interacting with other UI elements essentially
-        if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
-            continueStartupSequence();
+        if (!isBlackScreenVisible) {
+             if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+                continueStartupSequence();
+             }
+             if (state.gameplay.isShowingBakedFood) {
+                console.log('Dismissing baked food view');
+                state.gameplay.isShowingBakedFood = false;
+                updateUI();
+             }
         }
     }, { passive: true });
 

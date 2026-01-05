@@ -21,7 +21,8 @@
         "PROGRESS_BAR_PREFIX": "assets/defaults/progress_bar/bar_",
         "BUTTON_PREFIX": "assets/{culture}/buttons/",
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
-        "LOADING_ANIMATION": "assets/defaults/loading/wave.gif"
+        "LOADING_ANIMATION": "assets/defaults/loading/wave.gif",
+        "BAKED_FOOD": "assets/{culture}/pet/baked_food.png"
     },
     "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
@@ -34,6 +35,8 @@
         "COOKING": "Cooking...",
         "INFO_HOME": "Meet the Guardians need to gain his trust",
         "INFO_FOOD": "Select the ingredients in the correct order",
-        "INFO_DRESS": "Choose the proper dress for the ritual"
+        "INFO_DRESS": "Choose the proper dress for the ritual",
+        "FOOD_NAME": "{foodName}",
+        "FOOD_DESCRIPTION": "{foodDescription}"
     }
 }   
