@@ -98,6 +98,8 @@ const dom = {
     infoOverlay: document.getElementById('info-overlay'),
     infoContent: document.getElementById('info-content'),
     petImage: document.getElementById('pet-image'),
+    backgroundPetImage: document.getElementById('background-pet-image'),
+    tableImage: document.getElementById('table-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
     contentZoneTop: document.getElementById('content-zone-top'),
     contentZoneBot: document.getElementById('content-zone-bot'),
@@ -466,7 +468,17 @@ function updateProgressBar() {
 
 function updatePetImage() {
     // If a GIF is playing (gameplay specific), do not override it
-    if (state.ui.isGifPlaying) return;
+    if (state.ui.isGifPlaying) {
+        dom.backgroundPetImage.style.display = 'none';
+        dom.tableImage.style.display = 'none';
+        dom.petImage.classList.remove('is-bowl');
+        return;
+    }
+
+    // Default: Hide layers and remove bowl styling
+    dom.backgroundPetImage.style.display = 'none';
+    dom.tableImage.style.display = 'none';
+    dom.petImage.classList.remove('is-bowl');
 
     let newImagePath;
 
@@ -481,12 +493,25 @@ function updatePetImage() {
         }
     } else if (state.gameplay.isShowingBakedFood) {
         newImagePath = CONFIG.ASSETS.BAKED_FOOD;
-    } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
+    } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page (Bowl Sequence)
+        
+        dom.petImage.classList.add('is-bowl');
+
+        // 1. Show Background Pet
+        dom.backgroundPetImage.style.display = 'block';
+        dom.backgroundPetImage.src = getAssetPath(state.gameplay.currentPetImage);
+
+        // 2. Show Table
+        dom.tableImage.style.display = 'block';
+        dom.tableImage.src = CONFIG.ASSETS.TABLE;
+
+        // 3. Determine Bowl State
         const count = state.gameplay.foodSequence.length;
         if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
         else if (count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
         else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
         else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
+        
     } else {
         // All other pages show the current pet state (default or dressed)
         newImagePath = state.gameplay.currentPetImage;

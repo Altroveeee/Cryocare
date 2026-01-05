@@ -83,14 +83,46 @@ body {
 .pet-container {
     max-width: 70vw;
     position: relative;
-    /* Context for absolute positioning of content zone */
+    /* Use Grid to stack images */
+    display: grid;
+    grid-template-areas: "stack";
+    align-items: center;
+    justify-items: center;
+}
+
+#pet-image, 
+#background-pet-image, 
+#table-image {
+    grid-area: stack;
+    width: 100%;
+    height: auto; /* Let aspect ratio drive height */
+    object-fit: fill;
 }
 
 #pet-image {
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    /* Ensures the image fits without cropping */
+    position: relative;
+    z-index: 3;
+}
+
+#pet-image.is-bowl {
+    width: 40%;
+    /* Align relative to the grid cell center, then offset */
+    justify-self: center;
+    align-self: center;
+    z-index: 3;
+    transform: translateY(50%);
+}
+
+#background-pet-image {
+    position: relative; /* Participate in layout flow */
+    z-index: 1;
+    display: none; /* Hidden by default */
+}
+
+#table-image {
+    position: relative; /* Participate in layout flow */
+    z-index: 2;
+    display: none; /* Hidden by default */
 }
 
 .content-zone {
@@ -178,6 +210,7 @@ body {
     align-items: center;
     cursor: pointer;
     /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+    z-index: 3;
 }
 
 .round-button img {
