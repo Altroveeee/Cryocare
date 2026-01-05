@@ -67,7 +67,8 @@ const state = {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: null,
-        isShowingBakedFood: false,
+        bakingState: 'none', // 'none' | 'baking' | 'baked'
+        feedingState: 'idle', // 'idle' | 'ready_to_eat' | 'ready_to_share' | 'complete'
     },
     ui: {
         isAnyButtonDragging: false,
@@ -76,6 +77,7 @@ const state = {
         touchEndX: 0,
         isMouseDragging: false,
         isGifPlaying: false,
+        isAnimating: false,
         tempContent: {
             top: null,
             bot: null
@@ -186,7 +188,8 @@ function resetGame(culture = null) {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
-        isShowingBakedFood: false,
+        bakingState: 'none', // 'none' | 'baking' | 'baked'
+        feedingState: 'idle',
     };
 
     // 4. Reset Navigation
@@ -194,6 +197,7 @@ function resetGame(culture = null) {
 
     // 5. Update UI
     state.ui.isGifPlaying = false;
+    state.ui.isAnimating = false;
     state.ui.tempContent = { top: null, bot: null };
     state.ui.tempTimers = { top: null, bot: null };
     
@@ -212,19 +216,20 @@ function handleFoodInteraction(buttonId) {
 
         if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
             console.log('Food order is correct');
-            state.progress.food = true;
             state.gameplay.foodSequence = [];
 
             // Call updateUI here to hide buttons before GIF starts
+            state.gameplay.bakingState = 'baking';
             updateUI();
 
             // Play Baking GIF
             showTempMessage('bot', 'COOKING', CONFIG.GIF_DURATION_MS);
             playGif(CONFIG.ASSETS.PET_BAKING, () => {
                 // Show Baked Food after GIF
-                state.gameplay.isShowingBakedFood = true;
+                state.gameplay.bakingState = 'baked';
                 updateUI();
             });
+            updateUI();
         }
         return true;
     } else {
@@ -335,7 +340,7 @@ function determineTopZoneContent() {
     }
     
     // Priority 2.5: Baked Food Display
-    if (state.gameplay.isShowingBakedFood) {
+    if (state.gameplay.bakingState === 'baked') {
         return {
             type: 'text',
             value: getText('FOOD_NAME'),
@@ -367,7 +372,7 @@ function determineBotZoneContent() {
     }
 
     // Priority 1.5: Baked Food Display
-    if (state.gameplay.isShowingBakedFood) {
+    if (state.gameplay.bakingState === 'baked') {
         return {
             type: 'text',
             value: getText('FOOD_DESCRIPTION'),
@@ -491,9 +496,9 @@ function updatePetImage() {
             // Fallback
             newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
-    } else if (state.gameplay.isShowingBakedFood) {
+    } else if (state.gameplay.bakingState === 'baked') {
         newImagePath = CONFIG.ASSETS.BAKED_FOOD;
-    } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page (Bowl Sequence)
+    } else if (state.currentPageIndex === 1 && state.gameplay.bakingState === 'none') { // Food Page (Bowl Sequence)
         
         dom.petImage.classList.add('is-bowl');
 
@@ -507,8 +512,8 @@ function updatePetImage() {
 
         // 3. Determine Bowl State
         const count = state.gameplay.foodSequence.length;
-        if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
-        else if (count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
+        if (state.gameplay.feedingState !== 'ready_to_eat' && state.gameplay.feedingState !== 'ready_to_share' && count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
+        else if (state.gameplay.feedingState === 'ready_to_share' || count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
         else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
         else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
         
@@ -579,7 +584,13 @@ function renderInfoButton() {
 }
 
 function shouldHideControls(pageId) {
-    if (pageId === 'food' && state.progress.food) return true;
+    if (pageId === 'food') {
+        if (state.progress.food) return true;
+        if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) return true;
+        if (state.gameplay.bakingState !== 'none') return true;
+        if (state.gameplay.feedingState !== 'idle') return true;
+        return false;
+    }
     if (pageId === 'dress' && state.progress.ritual) return true;
     if (pageId === 'ritual' && state.progress.ritual) return true;
     return false;
@@ -818,13 +829,47 @@ function setupEventListeners() {
         // 1. Startup Sequence
         if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
             continueStartupSequence();
+            return;
         }
 
-        // 2. Dismiss Baked Food
-        if (!isBlackScreenVisible && state.gameplay.isShowingBakedFood) {
-             console.log('Dismissing baked food view');
-             state.gameplay.isShowingBakedFood = false;
+        // 2. Baked Food Screen (Transition to Eating)
+        if (!isBlackScreenVisible && state.gameplay.bakingState === 'baked') {
+             console.log('Transitioning from Baked Food to Ready to Eat');
+             state.gameplay.bakingState = 'none';
+             state.gameplay.feedingState = 'ready_to_eat';
              updateUI();
+             return;
+        }
+
+        // 3. Feeding Sequence (Eat)
+        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_eat' && !state.ui.isAnimating) {
+            console.log('Eating Action');
+            state.ui.isAnimating = true;
+            dom.petImage.classList.add('bowl-eat-anim');
+
+            setTimeout(() => {
+                state.progress.food = true; // Mark as done here
+                state.gameplay.feedingState = 'ready_to_share';
+                dom.petImage.classList.remove('bowl-eat-anim');
+                state.ui.isAnimating = false;
+                updateUI();
+            }, 1000); // Match CSS transition duration
+            return;
+        }
+
+        // 4. Feeding Sequence (Share)
+        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_share' && !state.ui.isAnimating) {
+            console.log('Sharing Action');
+            state.ui.isAnimating = true;
+            dom.petImage.classList.add('bowl-share-anim');
+
+            setTimeout(() => {
+                state.gameplay.feedingState = 'complete';
+                dom.petImage.classList.remove('bowl-share-anim');
+                state.ui.isAnimating = false;
+                updateUI();
+            }, 1000); // Match CSS transition duration
+            return;
         }
     };
     
@@ -837,9 +882,9 @@ function setupEventListeners() {
              if (state.appPhase === 'loading' && state.loadingStep === 'static') {
                 continueStartupSequence();
              }
-             if (state.gameplay.isShowingBakedFood) {
+             if (state.gameplay.bakingState === 'baked') {
                 console.log('Dismissing baked food view');
-                state.gameplay.isShowingBakedFood = false;
+                state.gameplay.bakingState = 'none';
                 updateUI();
              }
         }

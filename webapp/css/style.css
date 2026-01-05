@@ -100,17 +100,30 @@ body {
 }
 
 #pet-image {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    /* Ensures the image fits without cropping */
     position: relative;
     z-index: 3;
+    transition: transform 1s ease-in-out;
 }
 
 #pet-image.is-bowl {
     width: 40%;
+    height: auto;
     /* Align relative to the grid cell center, then offset */
     justify-self: center;
     align-self: center;
-    z-index: 3;
     transform: translateY(50%);
+}
+
+#pet-image.is-bowl.bowl-eat-anim {
+    transform: translateY(-10%);
+}
+
+#pet-image.is-bowl.bowl-share-anim {
+    transform: translateY(80%) scale(2.5);
 }
 
 #background-pet-image {
