@@ -1,5 +1,5 @@
 {
-    "TIMEOUT_MS": 30000,
+    "TIMEOUT_MS": 80000,
     "GIF_DURATION_MS": 4000,
     "UI": {
         "BUTTON_RADIUS": 100,
