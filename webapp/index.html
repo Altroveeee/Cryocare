@@ -44,7 +44,7 @@
             <div class="progress-bar-container">
                 <!-- Contenitore della barra di avanzamento -->
 
-                <img id="progress-bar-image" src="assets/progress-bar/bar0.png" alt="Progress Bar Image">
+                <img id="progress-bar-image" src="assets/defaults/progress_bar/bar_0.png" alt="Progress bar">
                 <!-- Immagine della barra di progresso (livello iniziale) -->
             </div>
         </div>
@@ -60,8 +60,11 @@
                 <!-- TOP ZONE: For content above the pet (e.g., ritual button, speech bubbles) -->
                 <div id="content-zone-top" class="content-zone"></div>
 
-                <img id="pet-image" src="" alt="Pet Image">
-                <!-- Immagine del pet (probabilmente impostata via JavaScript) -->
+                <img id="pet-image" src="" alt="Pet Image" style="z-index: 1;">
+
+                <img id="table-image" src="assets/defaults/table/tavolo.png" alt="table" style="display: none; z-index: 5;">
+
+                <img id="bowl-image" src="" alt="Bowl" style="display: none;">
 
                 <!-- BOT ZONE: For content below the pet (e.g., subtitles, instructions) -->
                 <div id="content-zone-bot" class="content-zone"></div>

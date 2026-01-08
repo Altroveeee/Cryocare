@@ -1,3 +1,17 @@
+@font-face {
+    font-family: 'Avenir Next';
+    src: url('assets/defaults/font/avenir_next.otf') format('opentype'); 
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    font-family: 'Avenir Next', normal !important;
+    line-height: 1.2 !important;
+    font-size: 6vw !important;
+    color: black;
+}
+
 body {
     background-color: black;
     margin: 0;
@@ -9,13 +23,16 @@ body {
 }
 
 #oval-container {
-    width: 95vw;
-    height: 95vh;
+    aspect-ratio: 1325 / 1916; 
+    width: 100vw;
+    max-width: 100%; 
+
     background-color: white;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
     /* This is important to keep the sections inside the oval shape */
 }
 
@@ -27,7 +44,6 @@ body {
     align-items: center;
     font-family: sans-serif;
     color: #555;
-    font-size: 1.5vw;
     max-height: 50vh;
 }
 
@@ -59,8 +75,12 @@ body {
 /* Info Overlay Styles */
 #info-overlay {
     position: fixed;
-    width: 95vw;
-    height: 95vh;
+    aspect-ratio: 1325 / 1916; 
+    
+    width: 100vw;
+
+    max-width: 100%; 
+    
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.8);
     z-index: 200;
@@ -75,29 +95,59 @@ body {
     padding: 20px;
     max-width: 80%;
     text-align: center;
-    font-size: large;
     font-family: sans-serif;
     pointer-events: none; /* Allows click to pass through to overlay for closing */
 }
 
 .pet-container {
-    max-width: 70vw;
-    position: relative;
-    /* Context for absolute positioning of content zone */
+    max-width: 80vw;
+    position: relative; 
+    display: flex;
+    justify-content: center;
 }
 
 #pet-image {
     width: 100%;
     height: 100%;
     object-fit: fill;
-    /* Ensures the image fits without cropping */
+    position: relative; 
+    z-index: 1;
+}
+
+#table-image {
+    position: absolute; 
+    z-index: 5;        
+    
+    /* Posizionamento */
+    top: 60%;        
+    left: 50%;
+    transform: translateX(-50%); 
+    
+    /* Dimensioni */
+    width: 150%;         
+    height: auto;
+    pointer-events: none; 
+}
+
+#bowl-image {
+    position: absolute; 
+    z-index: 10;
+    
+    /* POSIZIONAMENTO: Modifica 'bottom' per alzarla o abbassarla */
+    top: 50%;         
+    left: 50%;
+    transform: translateX(-50%); /* Centrata orizzontalmente */
+    
+    /* GRANDEZZA: Modifica width per ingrandire/rimpicciolire la ciotola */
+    width: 50%;         
+    height: auto;
 }
 
 .content-zone {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 100%;
+    width: 80%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -146,7 +196,9 @@ body {
 }
 
 .progress-bar-container {
-    max-width: 50vw;
+    max-width: 65vw;
+    position: absolute;
+    top: 35px;
 }
 
 #progress-bar-image {
@@ -162,6 +214,8 @@ body {
     /* Take full width of section3 */
     height: 100%;
     /* Take full height of section3 */
+    bottom: 100%;
+    z-index: 20;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -170,19 +224,23 @@ body {
 .round-button {
     position: absolute;
     /* For curved placement */
-    border-radius: 50%;
-    background-color: white;
-    /* Default button background */
+    border-radius: 100%;
+    background-color: none;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+
+    touch-action: none;
+    /* Impedisce di selezionare l'immagine o far apparire il menu "Copia/Salva" tenendo premuto */
+    -webkit-user-select: none; /* Per iPhone/iPad */
+    user-select: none;         /* Per Android/Chrome */
+    -webkit-touch-callout: none; /* Disabilita menu contestuale iOS */
 }
 
 .round-button img {
-    width: 80%;
-    height: 80%;
+    width: 170%;
+    height: 170%;
     object-fit: contain;
     border-radius: 50%;
     /* To make image round inside button */
@@ -202,11 +260,11 @@ body {
 }
 
 #nav-container-left {
-    left: 15px;
+    left: 50px;
 }
 
 #nav-container-right {
-    right: 15px;
+    right: 50px;
 }
 
 .nav-arrow {
@@ -214,6 +272,45 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 100%;
+    width: 115%;
     height: auto;
+}
+
+/* --- ANIMAZIONE RIMBALZO --- */
+@keyframes click-bounce {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(0.85); }
+    100% { transform: scale(1); }
+}
+
+/* ANIMAZIONE TASTO INFO --- */
+@keyframes info-bounce {
+    0%   { transform: translateX(-50%) scale(1); }
+    50%  { transform: translateX(-50%) scale(0.85); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+/* --- ANIMAZIONE FRECCE --- */
+@keyframes arrow-bounce {
+    0%   { transform: translate(-50%, -50%) scale(1); }
+    50%  { transform: translate(-50%, -50%) scale(0.85); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* --- ASSEGNAZIONE DELLE ANIMAZIONI --- */
+/* Bottoni generici */
+.round-button.clicked {
+    animation: click-bounce 0.2s ease-in-out;
+}
+
+/* Tasto Info */
+#info-button.clicked {
+    animation: info-bounce 0.2s ease-in-out;
+}
+
+/* Frecce */
+#nav-arrow-left.clicked, 
+#nav-arrow-right.clicked,
+.nav-arrow.clicked { 
+    animation: arrow-bounce 0.2s ease-in-out;
 }

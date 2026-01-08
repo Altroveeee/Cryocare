@@ -1,9 +1,9 @@
 {
-    "TIMEOUT_MS": 30000,
+    "TIMEOUT_MS": 90000,
     "GIF_DURATION_MS": 4000,
     "UI": {
-        "BUTTON_RADIUS": 100,
-        "SWIPE_THRESHOLD": 50,
+        "BUTTON_RADIUS": 260,
+        "SWIPE_THRESHOLD": 150,
         "SHAKE_THRESHOLD": 20
     },
     "ASSETS": {
@@ -32,7 +32,7 @@
         "WELCOME": "Hello! Thank you for adopting me!",
         "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian",
         "COOKING": "Cooking...",
-        "INFO_HOME": "Meet the Guardians need to gain his trust",
+        "INFO_HOME": "Meet the Guardian's needs to gain his trust",
         "INFO_FOOD": "Select the ingredients in the correct order",
         "INFO_DRESS": "Choose the proper dress for the ritual"
     }

@@ -97,6 +97,8 @@ const dom = {
     infoOverlay: document.getElementById('info-overlay'),
     infoContent: document.getElementById('info-content'),
     petImage: document.getElementById('pet-image'),
+    bowlImage: document.getElementById('bowl-image'),
+    tableImage: document.getElementById('table-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
     contentZoneTop: document.getElementById('content-zone-top'),
     contentZoneBot: document.getElementById('content-zone-bot'),
@@ -105,6 +107,9 @@ const dom = {
     navArrowLeft: document.getElementById('nav-arrow-left'),
     navArrowRight: document.getElementById('nav-arrow-right'),
 };
+
+const CLICK_SOUND = new Audio('assets/audio/click_sound.mp3');
+CLICK_SOUND.volume = 0.5;
 
 /* ==========================================================================
    TEXT SYSTEM HELPERS
@@ -140,6 +145,26 @@ function showTempMessage(zone, key, duration = 3000) {
         state.ui.tempTimers[zone] = null;
         updateUI();
     }, duration);
+}
+
+/* ==========================================================================
+   BUTTON ANIMATION E AUDIO
+   ========================================================================== */
+/**
+ * Add CSS class animation and removes it after 200ms
+ */
+function animateButtonPress(element) {
+    if (!element) return;
+
+    CLICK_SOUND.currentTime = 0;
+    CLICK_SOUND.play().catch(e => console.warn("Audio blocked", e));
+
+    element.classList.remove('clicked');
+    void element.offsetWidth; 
+    element.classList.add('clicked');
+    setTimeout(() => {
+        element.classList.remove('clicked');
+    }, 200);
 }
 
 /* ==========================================================================
@@ -375,12 +400,17 @@ function renderZoneContent(container, contentDef) {
         btn.appendChild(img);
 
         if (contentDef.action) {
-            btn.addEventListener('click', contentDef.action);
-            btn.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                contentDef.action();
-            }, { passive: true });
-        }
+        btn.addEventListener('click', (e) => {
+            animateButtonPress(e.currentTarget); 
+            contentDef.action();                
+        });
+
+        btn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            animateButtonPress(e.currentTarget); 
+            contentDef.action();                 
+        }, { passive: true });
+    }
 
         container.appendChild(btn);
     } else if (contentDef.type === 'text') {
@@ -409,6 +439,7 @@ function getAssetPath(pattern) {
 function updateUI() {
     updateProgressBar();
     updatePetImage();
+    updateBowlImage();
     updateContentZones(); // Updated to generic function
     renderSection3();
 
@@ -451,12 +482,6 @@ function updatePetImage() {
             // Fallback
             newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
-    } else if (state.currentPageIndex === 1 && !state.progress.food) { // Food Page
-        const count = state.gameplay.foodSequence.length;
-        if (count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
-        else if (count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
-        else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
-        else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
     } else {
         // All other pages show the current pet state (default or dressed)
         newImagePath = state.gameplay.currentPetImage;
@@ -469,6 +494,33 @@ function updatePetImage() {
     if (dom.petImage.getAttribute('src') !== finalPath) {
         console.log(`Changing pet image to: ${finalPath}`);
         dom.petImage.src = finalPath;
+    }
+}
+
+function updateBowlImage() {
+    // La ciotola appare SOLO se:
+    // 1. Siamo a pagina "food" (indice 1)
+    // 2. E il gioco del cibo NON è ancora finito
+    const isFoodPage = state.currentPageIndex === 1; 
+    const isFoodDone = state.progress.food;
+
+    if (isFoodPage && !isFoodDone) {
+        dom.bowlImage.style.display = 'block';
+        dom.tableImage.style.display = 'block';
+
+        // Calcola quale stato della ciotola mostrare
+        const count = state.gameplay.foodSequence.length;
+        let bowlPath = CONFIG.ASSETS.BOWL_EMPTY;
+
+        if (count === 1) bowlPath = CONFIG.ASSETS.BOWL_STATE_1;
+        else if (count === 2) bowlPath = CONFIG.ASSETS.BOWL_STATE_2;
+        else if (count >= 3) bowlPath = CONFIG.ASSETS.BOWL_STATE_3;
+
+        dom.bowlImage.src = getAssetPath(bowlPath);
+    } else {
+        // Nascondi la ciotola se siamo in altre pagine o abbiamo finito
+        dom.bowlImage.style.display = 'none';
+        dom.tableImage.style.display = 'none';
     }
 }
 
@@ -494,6 +546,7 @@ function renderInfoButton() {
     const size = 30;
     const btn = document.createElement('div');
     btn.className = 'round-button';
+    btn.id = 'info-button';
     
     Object.assign(btn.style, {
         width: `${size}px`,
@@ -510,6 +563,7 @@ function renderInfoButton() {
     btn.appendChild(img);
 
     btn.onclick = () => {
+        animateButtonPress(btn);
         const pageId = PAGES[state.currentPageIndex].id;
         let textKey = 'INFO_HOME'; // Default
 
@@ -615,6 +669,12 @@ function createButtonElement(id, pageId, size) {
     };
 
     button.appendChild(img);
+
+    // --- AGGIUNTA: Attiva l'animazione automaticamente ---
+    // Funziona sia col click del mouse che col tocco
+    button.addEventListener('mousedown', () => animateButtonPress(button));
+    button.addEventListener('touchstart', () => animateButtonPress(button), { passive: true });
+
     return button;
 }
 
@@ -623,54 +683,84 @@ function createButtonElement(id, pageId, size) {
    ========================================================================== */
 
 function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
+let startX, startY;
+    let isDraggingStarted = false; // Flag per sapere se abbiamo superato la soglia
 
-    const startDrag = (e) => {
+    const onMouseDown = (e) => {
         if (state.ui.isAnyButtonDragging) return;
-        e.stopPropagation();
+        // Fa partire l'animazione (rimbalzo) appena tocchi il bottone
+        animateButtonPress(button);
 
-        state.ui.isAnyButtonDragging = true;
-        let isDraggingThis = true;
+        // Registra coordinate iniziali
+        startX = e.touches ? e.touches[0].clientX : e.clientX;
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        isDraggingStarted = false;
 
-        const rect = button.getBoundingClientRect();
+        // Aggiungi listener globali
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('touchmove', onMouseMove, { passive: false });
+        document.addEventListener('touchend', onMouseUp);
+    };
 
-        // Fixed positioning to allow dragging outside Section 3
-        button.style.position = 'fixed';
-        button.style.left = `${rect.left}px`;
-        button.style.top = `${rect.top}px`;
-        button.style.zIndex = 1000;
-        button.style.width = `${rect.width}px`;
-        button.style.height = `${rect.height}px`;
+    const onMouseMove = (e) => {
+        const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+        const currentY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        // Se non abbiamo ancora iniziato a trascinare, controlliamo la distanza (SOGLIA)
+        if (!isDraggingStarted) {
+            const diffX = Math.abs(currentX - startX);
+            const diffY = Math.abs(currentY - startY);
 
-        const offsetX = clientX - rect.left;
-        const offsetY = clientY - rect.top;
+            // Se ci siamo mossi meno di 5px, non fare nulla (è ancora un click)
+            if (diffX < 5 && diffY < 5) return;
 
-        const moveDrag = (e) => {
-            if (!isDraggingThis) return;
-            e.preventDefault();
+            // --- INIZIO TRASCINAMENTO REALE ---
+            isDraggingStarted = true;
+            state.ui.isAnyButtonDragging = true;
+            
+            // Solo ORA stacchiamo il bottone dal layout
+            const rect = button.getBoundingClientRect();
+            button.style.position = 'fixed';
+            button.style.left = `${rect.left}px`;
+            button.style.top = `${rect.top}px`;
+            button.style.zIndex = 1000;
+            button.style.width = `${rect.width}px`;
+            button.style.height = `${rect.height}px`;
+        }
 
-            const cx = e.touches ? e.touches[0].clientX : e.clientX;
-            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        // Logica di movimento (avviene solo se isDraggingStarted è true)
+        if (isDraggingStarted) {
+            e.preventDefault(); // Blocca lo scroll della pagina
+            
+            // Calcola lo spostamento rispetto alla posizione iniziale del click
+            // (Semplificato per evitare scatti al momento dell'aggancio)
+            const rect = button.getBoundingClientRect();
+            const moveX = currentX - startX;
+            const moveY = currentY - startY;
 
-            const newX = cx - offsetX;
-            const newY = cy - offsetY;
+            // Aggiorniamo startX/Y per il prossimo frame per avere un movimento relativo
+            startX = currentX;
+            startY = currentY;
 
-            button.style.left = `${newX}px`;
-            button.style.top = `${newY}px`;
-        };
+            button.style.left = `${rect.left + moveX}px`;
+            button.style.top = `${rect.top + moveY}px`;
+        }
+    };
 
-        const endDrag = () => {
-            if (!isDraggingThis) return;
-            isDraggingThis = false;
+    const onMouseUp = (e) => {
+        // Pulizia listener
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('touchmove', onMouseMove);
+        document.removeEventListener('touchend', onMouseUp);
+
+        if (isDraggingStarted) {
+            // Se stavamo trascinando, gestiamo il rilascio (Drop)
             state.ui.isAnyButtonDragging = false;
+            isDraggingStarted = false;
 
-            cleanupListeners();
-
-            // Target is Section 2
             const section2 = document.getElementById('section2');
-
             let droppedSuccessfully = false;
 
             if (checkDropZoneCollision(button, section2)) {
@@ -678,32 +768,24 @@ function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
             }
 
             if (!droppedSuccessfully) {
-                // Revert to absolute
+                // Torna indietro
                 button.style.position = 'absolute';
                 button.style.zIndex = 'auto';
-                button.style.userSelect = 'auto';
                 button.style.left = resetLeft;
                 button.style.top = resetTop;
                 button.style.transition = 'left 0.3s, top 0.3s';
                 setTimeout(() => { button.style.transition = ''; }, 300);
             }
-        };
-
-        const cleanupListeners = () => {
-            document.removeEventListener('mousemove', moveDrag);
-            document.removeEventListener('mouseup', endDrag);
-            document.removeEventListener('touchmove', moveDrag);
-            document.removeEventListener('touchend', endDrag);
-        };
-
-        document.addEventListener('mousemove', moveDrag);
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('touchmove', moveDrag, { passive: false });
-        document.addEventListener('touchend', endDrag);
+        } else {
+            // Se NON stavamo trascinando, era un semplice click!
+            // L'azione del click è già gestita dal listener 'click' o 'mousedown' che hai messo per l'animazione
+            // Ma se serve l'azione logica qui (nel caso non usi onclick separato):
+            // onSuccess(); // Scommenta se il click non funziona
+        }
     };
 
-    button.addEventListener('mousedown', startDrag);
-    button.addEventListener('touchstart', startDrag, { passive: true });
+    button.addEventListener('mousedown', onMouseDown);
+    button.addEventListener('touchstart', onMouseDown, { passive: true });
 }
 
 function checkDropZoneCollision(button, targetElement) {
@@ -732,17 +814,32 @@ function setupEventListeners() {
             handleSwipe();
         });
     
-        // Nav Arrows Listeners
-    dom.navArrowLeft.addEventListener('click', () => handleNavClick('prev'));
+    // Freccia Sinistra (Click mouse)
+    dom.navArrowLeft.addEventListener('click', () => {
+        animateButtonPress(dom.navArrowLeft);
+        handleNavClick('prev')
+    });
+    // Freccia Sinistra (Touch telefono)
     dom.navArrowLeft.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
         e.stopPropagation(); 
+
+        animateButtonPress(e.currentTarget);
         handleNavClick('prev');
-    }, { passive: true });
-    dom.navArrowRight.addEventListener('click', () => handleNavClick('next'));
-    dom.navArrowRight.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
+    }, { passive: false });
+    // Freccia Destra (Click mouse)
+    dom.navArrowRight.addEventListener('click', () => {
+        animateButtonPress(dom.navArrowRight);
         handleNavClick('next');
-    }, { passive: true });
+    });
+    // Freccia Destra (Touch telefono)
+    dom.navArrowRight.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+
+        animateButtonPress(e.currentTarget);
+        handleNavClick('next');
+    }, { passive: false });
 
     // Info Overlay Listener
     dom.infoOverlay.addEventListener('click', () => {
