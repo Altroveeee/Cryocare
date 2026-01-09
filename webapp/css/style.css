@@ -100,47 +100,61 @@ body {
 }
 
 .pet-container {
-    max-width: 80vw;
-    position: relative; 
-    display: flex;
-    justify-content: center;
+    max-width: 70vw;
+    position: relative;
+    /* Use Grid to stack images */
+    display: grid;
+    grid-template-areas: "stack";
+    align-items: center;
+    justify-items: center;
+}
+
+#pet-image, 
+#background-pet-image, 
+#table-image {
+    grid-area: stack;
+    width: 100%;
+    height: auto; /* Let aspect ratio drive height */
+    object-fit: fill;
 }
 
 #pet-image {
     width: 100%;
     height: 100%;
     object-fit: fill;
-    position: relative; 
+    /* Ensures the image fits without cropping */
+    position: relative;
+    z-index: 3;
+    transition: transform 1s ease-in-out;
+}
+
+#pet-image.is-bowl {
+    width: 40%;
+    height: auto;
+    /* Align relative to the grid cell center, then offset */
+    justify-self: center;
+    align-self: center;
+    transform: translateY(50%);
+}
+
+#pet-image.is-bowl.bowl-eat-anim {
+    transform: translateY(-10%);
+}
+
+#pet-image.is-bowl.bowl-share-anim {
+    transform: translateY(80%) scale(2.5);
+}
+
+#background-pet-image {
+    position: relative; /* Participate in layout flow */
     z-index: 1;
+    display: none; /* Hidden by default */
 }
 
 #table-image {
-    position: absolute; 
-    z-index: 5;        
-    
-    /* Posizionamento */
-    top: 60%;        
-    left: 50%;
-    transform: translateX(-50%); 
-    
-    /* Dimensioni */
-    width: 150%;         
-    height: auto;
-    pointer-events: none; 
-}
-
-#bowl-image {
-    position: absolute; 
-    z-index: 10;
-    
-    /* POSIZIONAMENTO: Modifica 'bottom' per alzarla o abbassarla */
-    top: 50%;         
-    left: 50%;
-    transform: translateX(-50%); /* Centrata orizzontalmente */
-    
-    /* GRANDEZZA: Modifica width per ingrandire/rimpicciolire la ciotola */
-    width: 50%;         
-    height: auto;
+    position: relative; /* Participate in layout flow */
+    z-index: 2;
+    display: none; /* Hidden by default */
 }
 
 .content-zone {
@@ -236,6 +250,7 @@ body {
     -webkit-user-select: none; /* Per iPhone/iPad */
     user-select: none;         /* Per Android/Chrome */
     -webkit-touch-callout: none; /* Disabilita menu contestuale iOS */
+    z-index: 3;
 }
 
 .round-button img {

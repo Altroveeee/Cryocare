@@ -67,6 +67,8 @@ const state = {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: null,
+        bakingState: 'none', // 'none' | 'baking' | 'baked'
+        feedingState: 'idle', // 'idle' | 'ready_to_eat' | 'ready_to_share' | 'complete'
     },
     ui: {
         isAnyButtonDragging: false,
@@ -75,6 +77,7 @@ const state = {
         touchEndX: 0,
         isMouseDragging: false,
         isGifPlaying: false,
+        isAnimating: false,
         tempContent: {
             top: null,
             bot: null
@@ -97,7 +100,7 @@ const dom = {
     infoOverlay: document.getElementById('info-overlay'),
     infoContent: document.getElementById('info-content'),
     petImage: document.getElementById('pet-image'),
-    bowlImage: document.getElementById('bowl-image'),
+    backgroundPetImage: document.getElementById('background-pet-image'),
     tableImage: document.getElementById('table-image'),
     progressBarImage: document.getElementById('progress-bar-image'),
     contentZoneTop: document.getElementById('content-zone-top'),
@@ -208,6 +211,8 @@ function resetGame(culture = null) {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
+        bakingState: 'none', // 'none' | 'baking' | 'baked'
+        feedingState: 'idle',
     };
 
     // 4. Reset Navigation
@@ -215,6 +220,7 @@ function resetGame(culture = null) {
 
     // 5. Update UI
     state.ui.isGifPlaying = false;
+    state.ui.isAnimating = false;
     state.ui.tempContent = { top: null, bot: null };
     state.ui.tempTimers = { top: null, bot: null };
     
@@ -233,15 +239,20 @@ function handleFoodInteraction(buttonId) {
 
         if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
             console.log('Food order is correct');
-            state.progress.food = true;
             state.gameplay.foodSequence = [];
 
             // Call updateUI here to hide buttons before GIF starts
+            state.gameplay.bakingState = 'baking';
             updateUI();
 
             // Play Baking GIF
-            playGif(CONFIG.ASSETS.PET_BAKING);
-            showTemporaryText('COOKING', 'bot', CONFIG.GIF_DURATION_MS);
+            showTempMessage('bot', 'COOKING', CONFIG.GIF_DURATION_MS);
+            playGif(CONFIG.ASSETS.PET_BAKING, () => {
+                // Show Baked Food after GIF
+                state.gameplay.bakingState = 'baked';
+                updateUI();
+            });
+            updateUI();
         }
         return true;
     } else {
@@ -270,7 +281,7 @@ function handleDressInteraction(buttonId) {
     return true;
 }
 
-function playGif(assetPattern) {
+function playGif(assetPattern, onComplete = null) {
     state.ui.isGifPlaying = true;
     const gifPath = getAssetPath(assetPattern);
     console.log(`Playing GIF: ${gifPath}`);
@@ -278,7 +289,11 @@ function playGif(assetPattern) {
 
     setTimeout(() => {
         state.ui.isGifPlaying = false;
-        updateUI(); // Restore the correct image
+        if (onComplete) {
+            onComplete();
+        } else {
+            updateUI(); // Restore the correct image (default behavior)
+        }
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -346,6 +361,15 @@ function determineTopZoneContent() {
             className: 'welcome-text'
         };
     }
+    
+    // Priority 2.5: Baked Food Display
+    if (state.gameplay.bakingState === 'baked') {
+        return {
+            type: 'text',
+            value: getText('FOOD_NAME'),
+            className: 'food-name-text'
+        };
+    }
 
     // Priority 3: Gameplay
     const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
@@ -368,6 +392,15 @@ function determineBotZoneContent() {
     // Priority 1: Temporary Content
     if (state.ui.tempContent.bot) {
         return state.ui.tempContent.bot;
+    }
+
+    // Priority 1.5: Baked Food Display
+    if (state.gameplay.bakingState === 'baked') {
+        return {
+            type: 'text',
+            value: getText('FOOD_DESCRIPTION'),
+            className: 'food-desc-text'
+        };
     }
 
     // Priority 2: Loading Phase
@@ -469,7 +502,17 @@ function updateProgressBar() {
 
 function updatePetImage() {
     // If a GIF is playing (gameplay specific), do not override it
-    if (state.ui.isGifPlaying) return;
+    if (state.ui.isGifPlaying) {
+        dom.backgroundPetImage.style.display = 'none';
+        dom.tableImage.style.display = 'none';
+        dom.petImage.classList.remove('is-bowl');
+        return;
+    }
+
+    // Default: Hide layers and remove bowl styling
+    dom.backgroundPetImage.style.display = 'none';
+    dom.tableImage.style.display = 'none';
+    dom.petImage.classList.remove('is-bowl');
 
     let newImagePath;
 
@@ -482,6 +525,27 @@ function updatePetImage() {
             // Fallback
             newImagePath = CONFIG.ASSETS.PET_DEFAULT;
         }
+    } else if (state.gameplay.bakingState === 'baked') {
+        newImagePath = CONFIG.ASSETS.BAKED_FOOD;
+    } else if (state.currentPageIndex === 1 && state.gameplay.bakingState === 'none') { // Food Page (Bowl Sequence)
+        
+        dom.petImage.classList.add('is-bowl');
+
+        // 1. Show Background Pet
+        dom.backgroundPetImage.style.display = 'block';
+        dom.backgroundPetImage.src = getAssetPath(state.gameplay.currentPetImage);
+
+        // 2. Show Table
+        dom.tableImage.style.display = 'block';
+        dom.tableImage.src = CONFIG.ASSETS.TABLE;
+
+        // 3. Determine Bowl State
+        const count = state.gameplay.foodSequence.length;
+        if (state.gameplay.feedingState !== 'ready_to_eat' && state.gameplay.feedingState !== 'ready_to_share' && count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
+        else if (state.gameplay.feedingState === 'ready_to_share' || count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
+        else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
+        else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
+        
     } else {
         // All other pages show the current pet state (default or dressed)
         newImagePath = state.gameplay.currentPetImage;
@@ -578,7 +642,13 @@ function renderInfoButton() {
 }
 
 function shouldHideControls(pageId) {
-    if (pageId === 'food' && state.progress.food) return true;
+    if (pageId === 'food') {
+        if (state.progress.food) return true;
+        if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) return true;
+        if (state.gameplay.bakingState !== 'none') return true;
+        if (state.gameplay.feedingState !== 'idle') return true;
+        return false;
+    }
     if (pageId === 'dress' && state.progress.ritual) return true;
     if (pageId === 'ritual' && state.progress.ritual) return true;
     return false;
@@ -853,21 +923,71 @@ function setupEventListeners() {
     dom.petImage.addEventListener('mousedown', startUndressDrag);
     dom.petImage.addEventListener('touchstart', startUndressDrag, { passive: false });
 
-    // Startup Sequence Interaction
-    const handleStaticClick = () => {
+    // Global Interaction (Startup Sequence & Baked Food Dismissal)
+    const handleGlobalClick = () => {
         const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
+        
+        // 1. Startup Sequence
         if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
             continueStartupSequence();
+            return;
+        }
+
+        // 2. Baked Food Screen (Transition to Eating)
+        if (!isBlackScreenVisible && state.gameplay.bakingState === 'baked') {
+             console.log('Transitioning from Baked Food to Ready to Eat');
+             state.gameplay.bakingState = 'none';
+             state.gameplay.feedingState = 'ready_to_eat';
+             updateUI();
+             return;
+        }
+
+        // 3. Feeding Sequence (Eat)
+        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_eat' && !state.ui.isAnimating) {
+            console.log('Eating Action');
+            state.ui.isAnimating = true;
+            dom.petImage.classList.add('bowl-eat-anim');
+
+            setTimeout(() => {
+                state.progress.food = true; // Mark as done here
+                state.gameplay.feedingState = 'ready_to_share';
+                dom.petImage.classList.remove('bowl-eat-anim');
+                state.ui.isAnimating = false;
+                updateUI();
+            }, 1000); // Match CSS transition duration
+            return;
+        }
+
+        // 4. Feeding Sequence (Share)
+        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_share' && !state.ui.isAnimating) {
+            console.log('Sharing Action');
+            state.ui.isAnimating = true;
+            dom.petImage.classList.add('bowl-share-anim');
+
+            setTimeout(() => {
+                state.gameplay.feedingState = 'complete';
+                dom.petImage.classList.remove('bowl-share-anim');
+                state.ui.isAnimating = false;
+                updateUI();
+            }, 1000); // Match CSS transition duration
+            return;
         }
     };
     
     // Attach to body or specific container to ensure catch
-    document.body.addEventListener('click', handleStaticClick);
+    document.body.addEventListener('click', handleGlobalClick);
     document.body.addEventListener('touchstart', (e) => {
         const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
         // Only trigger if not interacting with other UI elements essentially
-        if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
-            continueStartupSequence();
+        if (!isBlackScreenVisible) {
+             if (state.appPhase === 'loading' && state.loadingStep === 'static') {
+                continueStartupSequence();
+             }
+             if (state.gameplay.bakingState === 'baked') {
+                console.log('Dismissing baked food view');
+                state.gameplay.bakingState = 'none';
+                updateUI();
+             }
         }
     }, { passive: true });
 

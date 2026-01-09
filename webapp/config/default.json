@@ -1,5 +1,5 @@
 {
-    "TIMEOUT_MS": 90000,
+    "TIMEOUT_MS": 80000,
     "GIF_DURATION_MS": 4000,
     "UI": {
         "BUTTON_RADIUS": 260,
@@ -15,13 +15,15 @@
         "BOWL_STATE_1": "assets/defaults/bowl/1.png",
         "BOWL_STATE_2": "assets/defaults/bowl/2.png",
         "BOWL_STATE_3": "assets/defaults/bowl/3.png",
+        "TABLE": "assets/defaults/bowl/table.png",
         "RITUAL_BUTTON_ICON": "assets/defaults/ritual.png",
         "ARROW_LEFT": "assets/defaults/arrows/left_arrow.png",
         "ARROW_RIGHT": "assets/defaults/arrows/right_arrow.png",
         "PROGRESS_BAR_PREFIX": "assets/defaults/progress_bar/bar_",
         "BUTTON_PREFIX": "assets/{culture}/buttons/",
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
-        "LOADING_ANIMATION": "assets/defaults/loading/wave.gif"
+        "LOADING_ANIMATION": "assets/defaults/loading/wave.gif",
+        "BAKED_FOOD": "assets/{culture}/pet/baked_food.png"
     },
     "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
@@ -34,6 +36,8 @@
         "COOKING": "Cooking...",
         "INFO_HOME": "Meet the Guardian's needs to gain his trust",
         "INFO_FOOD": "Select the ingredients in the correct order",
-        "INFO_DRESS": "Choose the proper dress for the ritual"
+        "INFO_DRESS": "Choose the proper dress for the ritual",
+        "FOOD_NAME": "{foodName}",
+        "FOOD_DESCRIPTION": "{foodDescription}"
     }
 }   
