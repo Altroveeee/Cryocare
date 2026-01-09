@@ -78,6 +78,7 @@ const state = {
         isMouseDragging: false,
         isGifPlaying: false,
         isAnimating: false,
+        blockClick: false, // <--- CORREZIONE: Flag per gestire il conflitto touch/click
         tempContent: {
             top: null,
             bot: null
@@ -102,6 +103,7 @@ const dom = {
     petImage: document.getElementById('pet-image'),
     backgroundPetImage: document.getElementById('background-pet-image'),
     tableImage: document.getElementById('table-image'),
+    bowlImage: document.getElementById('bowl-image'), // Assicurati che esista nell'HTML!
     progressBarImage: document.getElementById('progress-bar-image'),
     contentZoneTop: document.getElementById('content-zone-top'),
     contentZoneBot: document.getElementById('content-zone-bot'),
@@ -433,17 +435,24 @@ function renderZoneContent(container, contentDef) {
         btn.appendChild(img);
 
         if (contentDef.action) {
-        btn.addEventListener('click', (e) => {
-            animateButtonPress(e.currentTarget); 
-            contentDef.action();                
-        });
+            // --- CORREZIONE: Gestione sicura del click/touch ---
+            btn.addEventListener('click', (e) => {
+                if (state.ui.blockClick) return; // Ignora se c'è stato un touch recente
+                animateButtonPress(e.currentTarget); 
+                contentDef.action();                
+            });
 
-        btn.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            animateButtonPress(e.currentTarget); 
-            contentDef.action();                 
-        }, { passive: true });
-    }
+            btn.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                state.ui.blockClick = true; // Blocca i click simulati
+            
+                // Sblocca i click dopo 500ms
+                setTimeout(() => { state.ui.blockClick = false; }, 500);
+
+                animateButtonPress(e.currentTarget); 
+                contentDef.action();                 
+            }, { passive: true });
+        }
 
         container.appendChild(btn);
     } else if (contentDef.type === 'text') {
@@ -562,6 +571,9 @@ function updatePetImage() {
 }
 
 function updateBowlImage() {
+    // --- CORREZIONE: Controllo sicurezza se manca l'elemento nell'HTML ---
+    if (!dom.bowlImage) return;
+
     // La ciotola appare SOLO se:
     // 1. Siamo a pagina "food" (indice 1)
     // 2. E il gioco del cibo NON è ancora finito
@@ -925,7 +937,7 @@ function setupEventListeners() {
 
     // Global Interaction (Startup Sequence & Baked Food Dismissal)
     const handleGlobalClick = () => {
-        const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
+        const isBlackScreenVisible = window.getComputedStyle(dom.blackScreenOverlay).display !== 'none';
         
         // 1. Startup Sequence
         if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
@@ -977,7 +989,7 @@ function setupEventListeners() {
     // Attach to body or specific container to ensure catch
     document.body.addEventListener('click', handleGlobalClick);
     document.body.addEventListener('touchstart', (e) => {
-        const isBlackScreenVisible = dom.blackScreenOverlay.style.display !== 'none';
+        const isBlackScreenVisible = window.getComputedStyle(dom.blackScreenOverlay).display !== 'none';
         // Only trigger if not interacting with other UI elements essentially
         if (!isBlackScreenVisible) {
              if (state.appPhase === 'loading' && state.loadingStep === 'static') {
@@ -1161,11 +1173,18 @@ function showBlackScreen() {
     dom.blackScreenOverlay.style.display = 'block';
 }
 
+// --- FUNZIONE WAKEUP CORRETTA ---
 function wakeUp() {
-    if (dom.blackScreenOverlay.style.display !== 'none') {
+    // 1. Controlliamo lo stile COMPUTATO per sicurezza
+    const overlayStyle = window.getComputedStyle(dom.blackScreenOverlay);
+    const isOverlayVisible = overlayStyle.display !== 'none';
+
+    // 2. Attiviamo se lo schermo è visibile OPPURE se il gioco non è partito
+    if (isOverlayVisible || !state.hasStarted) {
         dom.blackScreenOverlay.style.display = 'none';
         
         if (!state.hasStarted) {
+            console.log("WakeUp: Primo avvio rilevato!");
             state.hasStarted = true;
             handleStartupSequence();
         }
@@ -1173,6 +1192,7 @@ function wakeUp() {
         resetInactivityTimer();
     }
 }
+// ----------------------------------
 
 function resetInactivityTimer() {
     if (state.ui.inactivityTimer) clearTimeout(state.ui.inactivityTimer);
