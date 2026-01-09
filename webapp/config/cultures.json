@@ -1,26 +1,26 @@
 {
     "kurd": {
         "VARIABLES": {
-            "petName": "Kurdo",
+            "petName": "Rojan",
             "cultureName": "Kurdish",
             "foodName": "Dolma",
             "foodDescription": "A traditional dish made of stuffed vegetables."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_DRESS_ID": "2"
         }
     },
     "amazigh": {
         "VARIABLES": {
-            "petName": "Mazigh",
+            "petName": "Meryem",
             "cultureName": "Amazigh",
             "foodName": "Couscous",
             "foodDescription": "A staple dish made from steamed semolina grains."
         },
         "RULES": {
-            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_FOOD_ORDER": ["1", "3", "2"],
+            "CORRECT_DRESS_ID": "2"
         }
     },
     "maori": {
@@ -31,44 +31,44 @@
             "foodDescription": "A traditional Maori method of cooking food using heated rocks buried in a pit oven."
         },
         "RULES": {
-            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_FOOD_ORDER": ["3", "2", "1"],
+            "CORRECT_DRESS_ID": "3"
         }
     },
     "palestinian": {
         "VARIABLES": {
-            "petName": "Handala",
+            "petName": "Ibrahim",
             "cultureName": "Palestinian",
             "foodName": "Maqluba",
             "foodDescription": "A traditional Palestinian dish made with rice, meat, and fried vegetables."
         },
         "RULES": {
-            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
+            "CORRECT_FOOD_ORDER": ["3", "2", "1"],
             "CORRECT_DRESS_ID": "1"
         }
     },
     "uyghurus": {
         "VARIABLES": {
-            "petName": "Yultuz",
+            "petName": "Erkin",
             "cultureName": "Uyghur",
             "foodName": "Laghman",
             "foodDescription": "A traditional Uyghur dish made with hand-pulled noodles and stir-fried vegetables and meat."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_DRESS_ID": "2"
         }
     },
     "guarani": {
         "VARIABLES": {
-            "petName": "Jaguarete",
+            "petName": "Araí",
             "cultureName": "Guarani",
             "foodName": "Sopa Paraguaya",
             "foodDescription": "A traditional Paraguayan dish made with cornmeal, cheese, and onions."
         },
         "RULES": {
-            "CORRECT_FOOD_ORDER": ["2", "1", "3"],
-            "CORRECT_DRESS_ID": "1"
+            "CORRECT_FOOD_ORDER": ["1", "2", "3"],
+            "CORRECT_DRESS_ID": "3"
         }
     }
 }
