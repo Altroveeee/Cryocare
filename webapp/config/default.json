@@ -41,7 +41,7 @@
         "FOOD_DESCRIPTION": "{foodDescription}"
     },
     "LAYOUT": {
-        "PROGRESS_BAR_Y": -60,
+        "PROGRESS_BAR_Y": -65,
         "TEXT_TOP_Y": -40,
         "PET_Y": 0,
         "TEXT_BOT_Y": 20,
