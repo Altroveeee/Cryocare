@@ -42,9 +42,9 @@
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,
-        "TEXT_TOP_Y": -40,
+        "TEXT_TOP_Y": -30,
         "PET_Y": 0,
-        "TEXT_BOT_Y": 20,
+        "TEXT_BOT_Y": 15,
         "BUTTONS_Y": 33,
         "INFO_BTN_Y": 40
     },  
