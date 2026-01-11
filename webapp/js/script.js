@@ -27,6 +27,9 @@ const state = {
         inactivityTimer: null,
         touchStartX: 0,
         isGifPlaying: false,
+        lastProgressScore: 0,
+        isProgressAnimating: false,
+        progressTimer: null,
         tempContent: { top: null, bot: null },
         tempTimers: { top: null, bot: null }
     }
@@ -169,6 +172,9 @@ function resetGame(culture = null) {
     
     // Reset UI Flags
     state.ui.isGifPlaying = false;
+    state.ui.lastProgressScore = 0;
+    state.ui.isProgressAnimating = false;
+    if (state.ui.progressTimer) clearTimeout(state.ui.progressTimer);
     state.ui.tempContent = { top: null, bot: null };
 
     resetInactivityTimer();
@@ -220,7 +226,25 @@ function updateImages() {
         if (state.progress.food) score++;
         if (state.progress.dress) score++;
         if (state.progress.ritual) score++;
-        dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
+        
+        if (score > state.ui.lastProgressScore) {
+            state.ui.lastProgressScore = score;
+            state.ui.isProgressAnimating = true;
+            
+            // Play GIF
+            dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.gif`;
+            
+            if (state.ui.progressTimer) clearTimeout(state.ui.progressTimer);
+            state.ui.progressTimer = setTimeout(() => {
+                state.ui.isProgressAnimating = false;
+                dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
+            }, 600); 
+        } else if (!state.ui.isProgressAnimating) {
+            const pngSrc = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
+            if (!dom.progressBarImage.src.endsWith(`${score}.png`)) {
+                dom.progressBarImage.src = pngSrc;
+            }
+        }
     }
 
     // 2. Pet Image
