@@ -260,14 +260,27 @@ function updateImages() {
         
         // Bowl Logic
         dom.bowlImage.style.display = 'block';
-        dom.bowlImage.className = 'game-layer prop'; // Reset anim classes
 
-        if (s.feedingState === 'ready_to_eat' || s.feedingState === 'eating' || s.feedingState === 'sharing') {
-             dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_3; // Full bowl
-             if (s.feedingState === 'eating') dom.bowlImage.classList.add('bowl-eat-anim');
-             if (s.feedingState === 'sharing') dom.bowlImage.classList.add('bowl-share-anim');
+        if (s.feedingState === 'ready_to_eat' || s.feedingState === 'eating' || s.feedingState === 'sharing') {             
+             if (s.feedingState === 'eating' && !dom.bowlImage.classList.contains('bowl-eat-anim')) {
+                dom.bowlImage.classList.add('bowl-eat-anim');
+                setTimeout(() => {
+                    dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_2;
+                    dom.bowlImage.classList.remove('bowl-eat-anim');
+                }, 1500);
+             } else if (s.feedingState === 'sharing' && !dom.bowlImage.classList.contains('bowl-share-anim')) {
+                dom.bowlImage.classList.add('bowl-share-anim');
+                setTimeout(() => {
+                    dom.bowlImage.src = CONFIG.ASSETS.BOWL_EMPTY;
+                    dom.bowlImage.classList.remove('bowl-share-anim');
+                }, 1500);
+             } else if (s.feedingState === 'ready_to_eat') {
+                dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_3; // Full bowl
+                dom.bowlImage.className = 'game-layer prop'; // Clear any leftover anims
+             }
+
         } else if (!state.progress.food) {
-            // Ingredient selection phase
+            dom.bowlImage.className = 'game-layer prop'; // Reset anim classes
             const count = s.foodSequence.length;
             let bowlKey = 'BOWL_EMPTY';
             if (count === 1) bowlKey = 'BOWL_STATE_1';
