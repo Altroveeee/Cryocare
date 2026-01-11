@@ -1,93 +1,61 @@
 <!DOCTYPE html>
-<!-- Dichiara il tipo di documento: HTML5 -->
-
 <html lang="en">
-<!-- Inizio del documento HTML, lingua impostata su inglese -->
-
 <head>
     <meta charset="UTF-8">
-    <!-- Imposta la codifica dei caratteri su UTF-8 (supporta caratteri speciali, accenti, ecc.) -->
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Rende il layout responsive sui dispositivi mobili -->
-
     <title>Embedded App</title>
-    <!-- Titolo della pagina visualizzato nella scheda del browser -->
-
     <link rel="stylesheet" href="css/style.css">
-    <!-- Collega il file CSS esterno per lo stile della pagina -->
 </head>
-
 <body>
-    <!-- Inizio del contenuto visibile della pagina -->
 
     <div id="oval-container">
-        <!-- Contenitore principale (probabilmente con forma ovale via CSS) -->
 
-        <div id="nav-container-left" class="nav-arrow-container">
-            <!-- Contenitore della freccia di navigazione sinistra -->
+        <!-- === LAYER 1: ACTORS (z-index: 10) === -->
+        <img id="pet-image" class="game-layer actor" src="" alt="Pet">
 
-            <img id="nav-arrow-left" class="nav-arrow" src="" alt="Left Arrow">
-            <!-- Immagine della freccia sinistra -->
+        <!-- === LAYER 2: PROPS (z-index: 30) === -->
+        <img id="table-image" class="game-layer prop" src="" alt="Table">
+        
+        <!-- Bowl sits on the table -->
+        <img id="bowl-image" class="game-layer prop" src="" alt="Bowl">
+
+        <!-- === LAYER 3: UI CONTENT (z-index: 40) === -->
+        <!-- Top Text / Bubble -->
+        <div id="content-zone-top" class="content-zone"></div>
+        
+        <!-- Bottom Text / Bubble -->
+        <div id="content-zone-bot" class="content-zone"></div>
+
+        <!-- === LAYER 4: CONTROLS (z-index: 50) === -->
+        <div id="progress-bar-container" class="ui-element">
+            <img id="progress-bar-image" src="" alt="Progress">
         </div>
 
-        <div id="nav-container-right" class="nav-arrow-container">
-            <!-- Contenitore della freccia di navigazione destra -->
-
-            <img id="nav-arrow-right" class="nav-arrow" src="" alt="Right Arrow">
-            <!-- Immagine della freccia destra -->
+        <div id="nav-arrow-left" class="nav-arrow-container">
+            <img class="nav-arrow-img" src="" alt="Left">
+        </div>
+        
+        <div id="nav-arrow-right" class="nav-arrow-container">
+            <img class="nav-arrow-img" src="" alt="Right">
         </div>
 
-        <div class="section" id="section1">
-            <!-- Prima sezione dell’interfaccia -->
+        <!-- Dynamic Buttons Container (Food/Dress icons) -->
+        <div id="buttons-container" class="ui-layer"></div>
 
-            <div class="progress-bar-container">
-                <!-- Contenitore della barra di avanzamento -->
-
-                <img id="progress-bar-image" src="assets/defaults/progress_bar/bar_0.png" alt="Progress bar">
-                <!-- Immagine della barra di progresso (livello iniziale) -->
-            </div>
+        <!-- Info Button Container -->
+        <div id="info-button-container" class="ui-element">
+            <!-- Will be populated by JS -->
         </div>
-
-        <!-- zona omino -->
-
-        <div class="section" id="section2">
-            <!-- Seconda sezione dell’interfaccia -->
-
-            <div class="pet-container">
-                <!-- Contenitore principale del pet -->
-
-                <!-- TOP ZONE: For content above the pet (e.g., ritual button, speech bubbles) -->
-                <div id="content-zone-top" class="content-zone"></div>
-
-                <img id="background-pet-image" src="" alt="Background Pet">
-                <img id="table-image" src="" alt="Table">
-                <img id="pet-image" src="" alt="Pet Image">
-                <!-- Immagine del pet (probabilmente impostata via JavaScript) -->
-
-                <!-- BOT ZONE: For content below the pet (e.g., subtitles, instructions) -->
-                <div id="content-zone-bot" class="content-zone"></div>
-            </div>
+    
+       <!-- === LAYER 5: OVERLAYS (z-index: 100+) === -->
+        <div id="info-overlay">
+            <div id="info-content"></div>
         </div>
-
-        <div class="section" id="section3"></div>
-        <!-- Terza sezione, attualmente vuota (placeholder) -->
     </div>
 
-    <!-- schermo nero -->
+    <!-- === LAYER 5: OVERLAYS (z-index: 100+) === -->
     <div id="black-screen-overlay"></div>
-    <!-- Overlay nero usato per transizioni, effetti o blocco interazione -->
 
-    <!-- Info Overlay -->
-    <div id="info-overlay">
-        <div id="info-content"></div>
-    </div>
-
-    <!-- collego lo script -->
     <script src="js/script.js"></script>
-    <!-- Collega il file JavaScript che gestisce logica e interazioni -->
-
-    <!-- <button id="servoButton">Attiva Servo</button>  -->
 </body>
-
 </html>

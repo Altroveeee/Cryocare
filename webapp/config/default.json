@@ -2,7 +2,7 @@
     "TIMEOUT_MS": 80000,
     "GIF_DURATION_MS": 4000,
     "UI": {
-        "BUTTON_RADIUS": 260,
+        "BUTTON_RADIUS": 100,
         "SWIPE_THRESHOLD": 150,
         "SHAKE_THRESHOLD": 20
     },
@@ -39,5 +39,16 @@
         "INFO_DRESS": "Choose the proper dress for the ritual",
         "FOOD_NAME": "{foodName}",
         "FOOD_DESCRIPTION": "{foodDescription}"
+    },
+    "LAYOUT": {
+        "PROGRESS_BAR_Y": -60,
+        "TEXT_TOP_Y": -40,
+        "PET_Y": 0,
+        "TEXT_BOT_Y": 20,
+        "BUTTONS_Y": 33,
+        "INFO_BTN_Y": 40
+    },  
+    "HARDWARE": {
+        "ESP_IP": "http://192.168.1.118"
     }
-}   
+}

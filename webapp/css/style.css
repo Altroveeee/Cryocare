@@ -1,15 +1,16 @@
 @font-face {
     font-family: 'Avenir Next';
-    src: url('assets/defaults/font/avenir_next.otf') format('opentype'); 
+    src: url('../assets/defaults/font/avenir_next.otf') format('opentype'); 
     font-weight: normal;
     font-style: normal;
 }
 
 * {
-    font-family: 'Avenir Next', normal !important;
-    line-height: 1.2 !important;
-    font-size: 6vw !important;
-    color: black;
+    box-sizing: border-box;
+    /* Prevent selection */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 body {
@@ -20,48 +21,184 @@ body {
     align-items: center;
     height: 100vh;
     overflow: hidden;
+    font-family: 'Avenir Next', sans-serif;
+    color: black;
 }
 
+/* === MAIN CONTAINER === */
 #oval-container {
     aspect-ratio: 1325 / 1916; 
     width: 100vw;
-    max-width: 100%; 
-
+    max-width: 100vh; /* Ensure it fits height-wise too */
+    max-height: 100vh;
+    
     background-color: white;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-    /* This is important to keep the sections inside the oval shape */
+    border-radius: 50%; /* Oval shape */
+    
+    position: relative; /* Coordinate system origin */
+    overflow: hidden;   /* Clip content to oval */
 }
 
-.section {
-    flex: 1;
-    box-sizing: border-box;
+/* === UTILITY: ABSOLUTE CENTERING === */
+.abs-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* === LAYERS === */
+
+/* Shared styles for game layers (Pet, Table, Bowl) */
+.game-layer {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Layer 1: Pet */
+#pet-image {
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    object-fit: fill; 
+    transition: transform 1s ease-in-out, opacity 0.5s;
+}
+
+/* Layer 2: Table */
+#table-image {
+    z-index: 30;
+    width: 100%; 
+    display: none;
+}
+
+/* Layer 2.5: Bowl */
+#bowl-image {
+    z-index: 35;
+    width: 100%; /* Relative to container */
+    display: none;
+}
+
+/* Layer 3: Text Zones */
+.content-zone {
+    z-index: 40;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Horizontally centered */
+    width: 80%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: sans-serif;
-    color: #555;
-    max-height: 50vh;
+    text-align: center;
+    pointer-events: none; /* Let clicks pass through text */
 }
 
-#section1 {
-    flex: 1;
+.content-zone span {
+    font-size: 6vw; /* Responsive text */
+    background: rgba(255, 255, 255, 0.7); 
+    border-radius: 10px;
+    padding: 5px 10px;
 }
 
-#section2 {
-    flex: 2;
+/* Layer 4: UI & Controls */
+.ui-element {
+    z-index: 50;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Centered X */
 }
 
-#section3 {
-    flex: 1;
-    position: relative;
-    /* Needed for absolute positioning of buttons */
-    /* overflow: hidden; Removed to allow buttons to overlap section2 */
+#progress-bar-container {
+    width: 60%;
+    pointer-events: none;
+}
+#progress-bar-image {
+    width: 100%;
+    height: auto;
 }
 
+/* Navigation Arrows */
+.nav-arrow-container {
+    z-index: 50;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Centered Y */
+    width: 10%; /* Responsive width */
+    cursor: pointer;
+    display: none; /* Toggled by JS */
+}
+
+#nav-arrow-left { left: 5%; }
+#nav-arrow-right { right: 5%; }
+
+.nav-arrow-img {
+    width: 100%;
+    height: auto;
+}
+
+/* Buttons Container */
+#buttons-container {
+    z-index: 50;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Container passes clicks, buttons catch them */
+}
+
+/* Round Buttons (Shared style) */
+.round-button {
+    pointer-events: auto; /* Re-enable clicks */
+    position: absolute; /* Positioned by JS */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    background: transparent; 
+    border-radius: 50%;
+}
+
+.round-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));
+}
+
+/* Ritual Button Specifics */
+.ritual-btn {
+    width: 80px;
+    height: 80px;
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    pointer-events: auto;
+}
+.ritual-btn img {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+}
+
+/* Info Button */
+#info-button-container {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+#info-button-container img {
+    width: 100%;
+    height: 100%;
+}
+
+/* === LAYER 5: OVERLAYS === */
 #black-screen-overlay {
     position: fixed;
     top: 0;
@@ -72,17 +209,13 @@ body {
     z-index: 100;
 }
 
-/* Info Overlay Styles */
 #info-overlay {
-    position: fixed;
-    aspect-ratio: 1325 / 1916; 
-    
-    width: 100vw;
-
-    max-width: 100%; 
-    
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.8);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
     z-index: 200;
     display: none;
     justify-content: center;
@@ -91,241 +224,28 @@ body {
 }
 
 #info-content {
-    background: transparent;
     padding: 20px;
     max-width: 80%;
     text-align: center;
-    font-family: sans-serif;
-    pointer-events: none; /* Allows click to pass through to overlay for closing */
+    font-size: 2rem;
+    color: #333;
 }
 
-.pet-container {
-    max-width: 70vw;
-    position: relative;
-    /* Use Grid to stack images */
-    display: grid;
-    grid-template-areas: "stack";
-    align-items: center;
-    justify-items: center;
+/* === ANIMATIONS === */
+.clicked {
+    animation: click-bounce 0.2s ease-in-out;
 }
 
-#pet-image, 
-#background-pet-image, 
-#table-image {
-    grid-area: stack;
-    width: 100%;
-    height: auto; /* Let aspect ratio drive height */
-    object-fit: fill;
-}
-
-#pet-image {
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    /* Ensures the image fits without cropping */
-    position: relative;
-    z-index: 3;
-    transition: transform 1s ease-in-out;
-}
-
-#pet-image.is-bowl {
-    width: 40%;
-    height: auto;
-    /* Align relative to the grid cell center, then offset */
-    justify-self: center;
-    align-self: center;
-    transform: translateY(50%);
-}
-
-#pet-image.is-bowl.bowl-eat-anim {
-    transform: translateY(-10%);
-}
-
-#pet-image.is-bowl.bowl-share-anim {
-    transform: translateY(80%) scale(2.5);
-}
-
-#background-pet-image {
-    position: relative; /* Participate in layout flow */
-    z-index: 1;
-    display: none; /* Hidden by default */
-}
-
-#table-image {
-    position: relative; /* Participate in layout flow */
-    z-index: 2;
-    display: none; /* Hidden by default */
-}
-
-.content-zone {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 20;
-    /* Ensure it is above other elements */
-
-    span {
-        font-size: large;
-        text-align: center;
-    }
-}
-
-#content-zone-top {
-    bottom: 80%;
-    /* Position right above the container */
-    margin-bottom: 10px;
-    /* Spacing from the pet head */
-}
-
-#content-zone-bot {
-    top: 80%;
-    /* Position right below the container (mirroring top) */
-    margin-top: 10px;
-    /* Spacing from the pet feet */
-}
-
-/* Dynamic Ritual Button Style */
-.ritual-btn {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    background-color: white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.ritual-btn img {
-    width: 80%;
-    height: 80%;
-    object-fit: contain;
-    border-radius: 50%;
-}
-
-.progress-bar-container {
-    max-width: 65vw;
-    position: absolute;
-    top: 35px;
-}
-
-#progress-bar-image {
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-}
-
-/* Styles for Section 3 buttons */
-.button-container {
-    position: absolute;
-    width: 100%;
-    /* Take full width of section3 */
-    height: 100%;
-    /* Take full height of section3 */
-    bottom: 100%;
-    z-index: 20;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.round-button {
-    position: absolute;
-    /* For curved placement */
-    border-radius: 100%;
-    background-color: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-
-    touch-action: none;
-    /* Impedisce di selezionare l'immagine o far apparire il menu "Copia/Salva" tenendo premuto */
-    -webkit-user-select: none; /* Per iPhone/iPad */
-    user-select: none;         /* Per Android/Chrome */
-    -webkit-touch-callout: none; /* Disabilita menu contestuale iOS */
-    z-index: 3;
-}
-
-.round-button img {
-    width: 170%;
-    height: 170%;
-    object-fit: contain;
-    border-radius: 50%;
-    /* To make image round inside button */
-}
-
-/* Navigation Arrows */
-.nav-arrow-container {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    z-index: 50;
-    display: none;
-    /* Hidden by default, toggled by JS */
-}
-
-#nav-container-left {
-    left: 50px;
-}
-
-#nav-container-right {
-    right: 50px;
-}
-
-.nav-arrow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 115%;
-    height: auto;
-}
-
-/* --- ANIMAZIONE RIMBALZO --- */
 @keyframes click-bounce {
     0%   { transform: scale(1); }
     50%  { transform: scale(0.85); }
     100% { transform: scale(1); }
 }
 
-/* ANIMAZIONE TASTO INFO --- */
-@keyframes info-bounce {
-    0%   { transform: translateX(-50%) scale(1); }
-    50%  { transform: translateX(-50%) scale(0.85); }
-    100% { transform: translateX(-50%) scale(1); }
+.bowl-eat-anim {
+    transform: translateY(-5%) scale(1.05); /* Subtle jump */
 }
 
-/* --- ANIMAZIONE FRECCE --- */
-@keyframes arrow-bounce {
-    0%   { transform: translate(-50%, -50%) scale(1); }
-    50%  { transform: translate(-50%, -50%) scale(0.85); }
-    100% { transform: translate(-50%, -50%) scale(1); }
-}
-
-/* --- ASSEGNAZIONE DELLE ANIMAZIONI --- */
-/* Bottoni generici */
-.round-button.clicked {
-    animation: click-bounce 0.2s ease-in-out;
-}
-
-/* Tasto Info */
-#info-button.clicked {
-    animation: info-bounce 0.2s ease-in-out;
-}
-
-/* Frecce */
-#nav-arrow-left.clicked, 
-#nav-arrow-right.clicked,
-.nav-arrow.clicked { 
-    animation: arrow-bounce 0.2s ease-in-out;
+.bowl-share-anim {
+    transform: translateY(20%) scale(1.5); /* Move to user */
 }

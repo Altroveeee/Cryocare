@@ -1,1268 +1,750 @@
-// Oggetto che conterrà la configurazione di default caricata da JSON
+// CONFIG & STATE
 let CONFIG = {};
-
-// Oggetto che conterrà le configurazioni specifiche per ogni cultura
 let CULTURE_CONFIGS = {};
 
-// Funzione asincrona che carica i file di configurazione
-async function loadConfiguration() {
-    try {
-        // Carica in parallelo i due file JSON
-        const [defaultConfigRes, cultureConfigsRes] = await Promise.all([
-            fetch('config/default.json'),     // configurazione base
-            fetch('config/cultures.json')     // regole specifiche per cultura
-        ]);
-
-        // Controlla se almeno una richiesta è fallita
-        if (!defaultConfigRes.ok || !cultureConfigsRes.ok) {
-            throw new Error('Failed to load configuration files');
-        }
-
-        // Converte le risposte in oggetti JS
-        CONFIG = await defaultConfigRes.json();
-        CULTURE_CONFIGS = await cultureConfigsRes.json();
-
-        console.log('Configuration loaded successfully');
-    } catch (error) {
-        // Gestione errori di caricamento
-        console.error('Error loading configuration:', error);
-    }
-}
-
-/**
- * PAGE DEFINITIONS
- * Defines the content and behavior for each navigable section.
- */
 const PAGES = [
-    {
-        id: 'home',
-        content: { type: 'empty' }
-    },
-    {
-        id: 'food',
-        content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] }
-    },
-    {
-        id: 'dress',
-        content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] }
-    },
+    { id: 'home', content: { type: 'empty' } },
+    { id: 'food', content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] } },
+    { id: 'dress', content: { type: 'curved-buttons', count: 3, ids: ['1', '2', '3'] } },
 ];
 
-/**
- * STATE MANAGEMENT
- * Single source of truth for the application state.
- */
 const state = {
-    appPhase: 'loading', // 'loading' | 'gameplay'
-    loadingStep: 'static', // 'static' | 'animation'
+    appPhase: 'black_screen', // black_screen -> waiting_for_click -> sequence_running -> gameplay
+    loadingStep: null, 
     hasStarted: false,
     currentCulture: 'kurd',
     currentPageIndex: 0,
-    progress: {
-        food: false,
-        dress: false,
-        ritual: false,
-    },
+    progress: { food: false, dress: false, ritual: false },
     gameplay: {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: null,
-        bakingState: 'none', // 'none' | 'baking' | 'baked'
-        feedingState: 'idle', // 'idle' | 'ready_to_eat' | 'ready_to_share' | 'complete'
+        bakingState: 'none', // none -> baking -> baked
+        feedingState: 'idle', // idle -> ready_to_eat -> eating -> sharing -> done
     },
     ui: {
         isAnyButtonDragging: false,
         inactivityTimer: null,
         touchStartX: 0,
-        touchEndX: 0,
-        isMouseDragging: false,
         isGifPlaying: false,
-        isAnimating: false,
-        blockClick: false, // <--- CORREZIONE: Flag per gestire il conflitto touch/click
-        tempContent: {
-            top: null,
-            bot: null
-        },
-        tempTimers: {
-            top: null,
-            bot: null
-        }
+        tempContent: { top: null, bot: null },
+        tempTimers: { top: null, bot: null }
     }
 };
 
-/**
- * DOM ELEMENTS
- * Cached references to DOM elements.
- */
-const dom = {
-    section3: document.getElementById('section3'),
-    ovalContainer: document.getElementById('oval-container'),
-    blackScreenOverlay: document.getElementById('black-screen-overlay'),
-    infoOverlay: document.getElementById('info-overlay'),
-    infoContent: document.getElementById('info-content'),
-    petImage: document.getElementById('pet-image'),
-    backgroundPetImage: document.getElementById('background-pet-image'),
-    tableImage: document.getElementById('table-image'),
-    bowlImage: document.getElementById('bowl-image'), // Assicurati che esista nell'HTML!
-    progressBarImage: document.getElementById('progress-bar-image'),
-    contentZoneTop: document.getElementById('content-zone-top'),
-    contentZoneBot: document.getElementById('content-zone-bot'),
-    navContainerLeft: document.getElementById('nav-container-left'),
-    navContainerRight: document.getElementById('nav-container-right'),
-    navArrowLeft: document.getElementById('nav-arrow-left'),
-    navArrowRight: document.getElementById('nav-arrow-right'),
-};
+const dom = {}; // Populated in init
 
 const CLICK_SOUND = new Audio('assets/audio/click_sound.mp3');
 CLICK_SOUND.volume = 0.5;
 
 /* ==========================================================================
-   TEXT SYSTEM HELPERS
+   INITIALIZATION
    ========================================================================== */
 
-function getText(key, params = {}) {
-    const template = CONFIG.TEXT_TEMPLATES[key] || "";
-    const cultureVars = CULTURE_CONFIGS[state.currentCulture] ? CULTURE_CONFIGS[state.currentCulture].VARIABLES : {};
+async function init() {
+    // 1. Load Config
+    await loadConfiguration();
     
-    const allParams = { ...cultureVars, ...params };
+    // 2. Cache DOM elements
+    cacheDomElements();
 
-    return template.replace(/{(\w+)}/g, (_, k) => allParams[k] || "");
-}
+    // 3. Preload Assets (Base & First Culture)
+    await preloadImages([
+        CONFIG.ASSETS.LOADING_STATIC,
+        CONFIG.ASSETS.LOADING_ANIMATION
+    ]);
 
-function showTempMessage(zone, key, duration = 3000) {
-    if (!state.ui.tempContent[zone] && !state.ui.tempTimers[zone]) {
-        // Only if not already showing something or reset
-    }
-
-    if (state.ui.tempTimers[zone]) {
-        clearTimeout(state.ui.tempTimers[zone]);
-    }
-
-    state.ui.tempContent[zone] = {
-        type: 'text',
-        value: getText(key)
-    };
-
+    // 4. Reset Game (Selects culture)
+    resetGame();
+    
+    // 5. Preload Culture Specifics
+    const cultureAssets = collectCultureAssets(state.currentCulture);
+    await preloadImages(cultureAssets);
+    
+    // 6. Start
+    setupEventListeners();
+    
+    // Initial State: Black Screen
+    dom.overlayBlack.style.display = 'block';
     updateUI();
+}
 
-    state.ui.tempTimers[zone] = setTimeout(() => {
-        state.ui.tempContent[zone] = null;
-        state.ui.tempTimers[zone] = null;
-        updateUI();
-    }, duration);
+async function loadConfiguration() {
+    try {
+        const [def, cult] = await Promise.all([
+            fetch('config/default.json').then(r => r.json()),
+            fetch('config/cultures.json').then(r => r.json())
+        ]);
+        CONFIG = def;
+        CULTURE_CONFIGS = cult;
+    } catch (e) {
+        console.error("Config Load Failed", e);
+    }
+}
+
+function cacheDomElements() {
+    dom.ovalContainer = document.getElementById('oval-container');
+    dom.petImage = document.getElementById('pet-image');
+    dom.tableImage = document.getElementById('table-image');
+    dom.bowlImage = document.getElementById('bowl-image');
+    dom.progressBarContainer = document.getElementById('progress-bar-container');
+    dom.progressBarImage = document.getElementById('progress-bar-image');
+    dom.navLeft = document.getElementById('nav-arrow-left');
+    dom.navLeftImg = dom.navLeft.querySelector('img');
+    dom.navRight = document.getElementById('nav-arrow-right');
+    dom.navRightImg = dom.navRight.querySelector('img');
+    dom.zoneTop = document.getElementById('content-zone-top');
+    dom.zoneBot = document.getElementById('content-zone-bot');
+    dom.buttonsContainer = document.getElementById('buttons-container');
+    dom.infoContainer = document.getElementById('info-button-container');
+    dom.overlayBlack = document.getElementById('black-screen-overlay');
+    dom.overlayInfo = document.getElementById('info-overlay');
+    dom.infoContent = document.getElementById('info-content');
+}
+
+function preloadImages(urls) {
+    const promises = urls.map(url => {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.src = url;
+            img.onload = resolve;
+            img.onerror = resolve; // Proceed anyway
+        });
+    });
+    return Promise.all(promises);
+}
+
+function collectCultureAssets(culture) {
+    // Helper to generate list of assets for current culture to prevent flicker
+    const assets = [];
+    const push = (p) => assets.push(p.replace('{culture}', culture));
+
+    // Pet
+    push(CONFIG.ASSETS.PET_BAKING);
+    push(CONFIG.ASSETS.PET_RITUAL);
+    for(let i=1; i<=3; i++) push(CONFIG.ASSETS.PET_DRESS.replace('{id}', i));
+    push(CONFIG.ASSETS.BAKED_FOOD);
+
+    // Buttons
+    PAGES.forEach(page => {
+        if(page.content.type === 'curved-buttons') {
+            page.content.ids.forEach(id => {
+                const path = CONFIG.ASSETS.BUTTON_PREFIX.replace('{culture}', culture) + `${page.id}${id}.png`;
+                assets.push(path);
+            });
+        }
+    });
+
+    return assets;
 }
 
 /* ==========================================================================
-   BUTTON ANIMATION E AUDIO
-   ========================================================================== */
-/**
- * Add CSS class animation and removes it after 200ms
- */
-function animateButtonPress(element) {
-    if (!element) return;
-
-    CLICK_SOUND.currentTime = 0;
-    CLICK_SOUND.play().catch(e => console.warn("Audio blocked", e));
-
-    element.classList.remove('clicked');
-    void element.offsetWidth; 
-    element.classList.add('clicked');
-    setTimeout(() => {
-        element.classList.remove('clicked');
-    }, 200);
-}
-
-/* ==========================================================================
-   GAME LOGIC HANDLERS
+   GAME LOGIC & STATE
    ========================================================================== */
 
-/**
- * Resets the game to initial state and optionally selects a new culture.
- * @param {string|null} culture - Specific culture to load, or null for random.
- */
 function resetGame(culture = null) {
-    // 1. Select Culture
     if (culture && CONFIG.CULTURES.includes(culture)) {
         state.currentCulture = culture;
     } else {
-        // Random selection
-        const randomIndex = Math.floor(Math.random() * CONFIG.CULTURES.length);
-        state.currentCulture = CONFIG.CULTURES[randomIndex];
+        const idx = Math.floor(Math.random() * CONFIG.CULTURES.length);
+        state.currentCulture = CONFIG.CULTURES[idx];
     }
-    console.log(`Game Reset. Active Culture: ${state.currentCulture}`);
 
-    // Apply Culture Specific Rules
     if (CULTURE_CONFIGS[state.currentCulture]) {
         CONFIG.RULES = { ...CONFIG.RULES, ...CULTURE_CONFIGS[state.currentCulture].RULES };
-        console.log(`Applied rules for ${state.currentCulture}`, CONFIG.RULES);
     }
 
-    // Set Navigation Arrow Images
-    if (CONFIG.ASSETS.ARROW_LEFT) dom.navArrowLeft.src = CONFIG.ASSETS.ARROW_LEFT;
-    if (CONFIG.ASSETS.ARROW_RIGHT) dom.navArrowRight.src = CONFIG.ASSETS.ARROW_RIGHT;
+    if (CONFIG.ASSETS.ARROW_LEFT) dom.navLeftImg.src = CONFIG.ASSETS.ARROW_LEFT;
+    if (CONFIG.ASSETS.ARROW_RIGHT) dom.navRightImg.src = CONFIG.ASSETS.ARROW_RIGHT;
 
-    // 2. Reset Progress
-    state.progress = {
-        food: false,
-        dress: false,
-        ritual: false,
-    };
-
-    // 3. Reset Gameplay State
+    state.progress = { food: false, dress: false, ritual: false };
     state.gameplay = {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
-        bakingState: 'none', // 'none' | 'baking' | 'baked'
-        feedingState: 'idle',
+        bakingState: 'none',
+        feedingState: 'idle'
     };
-
-    // 4. Reset Navigation
     state.currentPageIndex = 0;
-
-    // 5. Update UI
-    state.ui.isGifPlaying = false;
-    state.ui.isAnimating = false;
-    state.ui.tempContent = { top: null, bot: null };
-    state.ui.tempTimers = { top: null, bot: null };
     
-    updateUI();
+    // Reset UI Flags
+    state.ui.isGifPlaying = false;
+    state.ui.tempContent = { top: null, bot: null };
+
     resetInactivityTimer();
 }
 
-function handleFoodInteraction(buttonId) {
-    if (state.progress.food) return false;
+/* ==========================================================================
+   RENDERING & LAYOUT
+   ========================================================================== */
 
-    const currentStep = state.gameplay.foodSequence.length;
-    const expectedId = CONFIG.RULES.CORRECT_FOOD_ORDER[currentStep];
+function updateUI() {
+    applyLayoutPositions();
+    updateImages();
+    updateControls();
+    updateContentZones();
+}
 
-    if (buttonId === expectedId) {
-        state.gameplay.foodSequence.push(buttonId);
+function applyLayoutPositions() {
+    const layout = CONFIG.LAYOUT;
 
-        if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) {
-            console.log('Food order is correct');
-            state.gameplay.foodSequence = [];
+    // Helper: Percent to CSS Top (Center = 50%)
+    const setY = (el, yPct) => {
+        if(el) el.style.top = `calc(50% + ${yPct}%)`;
+    };
 
-            // Call updateUI here to hide buttons before GIF starts
-            state.gameplay.bakingState = 'baking';
-            updateUI();
+    setY(dom.progressBarContainer, layout.PROGRESS_BAR_Y);
+    setY(dom.petImage, layout.PET_Y);
+    setY(dom.tableImage, layout.PET_Y);
+    // Bowl might need specific tweaking or stick to pet Y
+    setY(dom.bowlImage, layout.PET_Y + 10); 
+    
+    setY(dom.zoneTop, layout.TEXT_TOP_Y);
+    setY(dom.zoneBot, layout.TEXT_BOT_Y);
+    
+    // Buttons Container is centered (0), individual buttons are offset
+    dom.buttonsContainer.style.top = '50%'; 
+    
+    setY(dom.infoContainer, layout.INFO_BTN_Y);
+}
 
-            // Play Baking GIF
-            showTempMessage('bot', 'COOKING', CONFIG.GIF_DURATION_MS);
-            playGif(CONFIG.ASSETS.PET_BAKING, () => {
-                // Show Baked Food after GIF
-                state.gameplay.bakingState = 'baked';
-                updateUI();
-            });
-            updateUI();
-        }
-        return true;
+function updateImages() {
+    const s = state.gameplay;
+    
+    // 1. Progress Bar
+    if (state.appPhase !== 'gameplay') {
+        dom.progressBarContainer.style.display = 'none';
     } else {
-        console.log(`Incorrect food item. Expected ${expectedId}, got ${buttonId}`);
-        triggerArduino(); // Trigger Arduino on wrong choice
-        return false;
-    }
-}
-
-function handleDressInteraction(buttonId) {
-    state.gameplay.chosenDressId = buttonId;
-    state.progress.dress = true;
-
-    // Update Pet Image
-    const dressPattern = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
-    state.gameplay.currentPetImage = getAssetPath(dressPattern);
-
-    if (state.gameplay.chosenDressId !== CONFIG.RULES.CORRECT_DRESS_ID) {
-        console.log('Incorrect dress chosen');
-        triggerArduino(); // Trigger Arduino on wrong choice
-    }
-    else {
-        console.log('Correct dress chosen');
+        dom.progressBarContainer.style.display = 'block';
+        let score = 0;
+        if (state.progress.food) score++;
+        if (state.progress.dress) score++;
+        if (state.progress.ritual) score++;
+        dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
     }
 
-    return true;
-}
-
-function playGif(assetPattern, onComplete = null) {
-    state.ui.isGifPlaying = true;
-    const gifPath = getAssetPath(assetPattern);
-    console.log(`Playing GIF: ${gifPath}`);
-    dom.petImage.src = gifPath;
-
-    setTimeout(() => {
-        state.ui.isGifPlaying = false;
-        if (onComplete) {
-            onComplete();
-        } else {
-            updateUI(); // Restore the correct image (default behavior)
-        }
-    }, CONFIG.GIF_DURATION_MS);
-}
-
-function handleButtonPress(buttonId, pageId) {
-    console.log(`Button pressed: ${buttonId} on page: ${pageId}`);
-
-    let isAccepted = false;
-
-    switch (pageId) {
-        case 'food':
-            isAccepted = handleFoodInteraction(buttonId);
-            break;
-        case 'dress':
-            isAccepted = handleDressInteraction(buttonId);
-            break;
-    }
-
-    if (isAccepted && !state.ui.isGifPlaying) {
-        updateUI();
-    }
-
-    return isAccepted;
-}
-
-function triggerRitual() {
-    if (state.progress.ritual) return;
+    // 2. Pet Image
+    // Priority: GIF > Baked > Loading > Default
+    let petSrc = s.currentPetImage;
+    let showPet = true;
     
-    state.progress.ritual = true;
-    playGif(CONFIG.ASSETS.PET_RITUAL);
-    updateUI();
-}
-
-/**
- * Updates the content zones (Top and Bot) based on the current state.
- */
-function updateContentZones() {
-    // 1. Clear Zones
-    dom.contentZoneTop.innerHTML = '';
-    dom.contentZoneBot.innerHTML = '';
-
-    // 2. Determine Content for Top Zone
-    const topContent = determineTopZoneContent();
-    if (topContent) {
-        renderZoneContent(dom.contentZoneTop, topContent);
-    }
-
-    // 3. Determine Content for Bot Zone
-    const botContent = determineBotZoneContent();
-    if (botContent) {
-        renderZoneContent(dom.contentZoneBot, botContent);
-    }
-}
-
-function determineTopZoneContent() {
-    // Priority 1: Temporary Content
-    if (state.ui.tempContent.top) {
-        return state.ui.tempContent.top;
-    }
-
-    // Priority 2: Loading Phase
-    if (state.appPhase === 'loading' && (state.loadingStep === 'welcome' || state.loadingStep === 'instructions')) {
-        return {
-            type: 'text',
-            value: getText('WELCOME'),
-            className: 'welcome-text'
-        };
+    if (state.ui.isGifPlaying) {
+        petSrc = dom.petImage.src; // Keep current GIF
+    } else if (state.appPhase === 'waiting_for_click') {
+        petSrc = CONFIG.ASSETS.LOADING_STATIC;
+    } else if (state.appPhase === 'sequence_running') {
+        // While sequence running, if in static step -> static, else animation
+        petSrc = state.loadingStep === 'static' ? CONFIG.ASSETS.LOADING_STATIC : CONFIG.ASSETS.LOADING_ANIMATION;
+    } else if (s.bakingState === 'baked') {
+        petSrc = CONFIG.ASSETS.BAKED_FOOD;
     }
     
-    // Priority 2.5: Baked Food Display
-    if (state.gameplay.bakingState === 'baked') {
-        return {
-            type: 'text',
-            value: getText('FOOD_NAME'),
-            className: 'food-name-text'
-        };
+    // Apply Pet
+    const finalPetSrc = getAssetPath(petSrc);
+    if (dom.petImage.getAttribute('src') !== finalPetSrc && !state.ui.isGifPlaying) {
+        dom.petImage.src = finalPetSrc;
     }
-
-    // Priority 3: Gameplay
-    const isDressCorrect = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
-    const isRitualDone = state.progress.ritual;
-    const isOnDressPage = state.currentPageIndex === 2; // Index for 'dress' page
     
-    if (isDressCorrect && !isRitualDone && !state.ui.isGifPlaying && isOnDressPage) {
-        return {
-            type: 'button',
-            image: CONFIG.ASSETS.RITUAL_BUTTON_ICON || 'assets/defaults/ritual.png',
-            className: 'ritual-btn',
-            action: triggerRitual
-        };
-    }
+    // Pet Absolute Positioning refinement
+    dom.petImage.style.display = showPet ? 'block' : 'none';
 
-    return null;
-}
-
-function determineBotZoneContent() {
-    // Priority 1: Temporary Content
-    if (state.ui.tempContent.bot) {
-        return state.ui.tempContent.bot;
-    }
-
-    // Priority 1.5: Baked Food Display
-    if (state.gameplay.bakingState === 'baked') {
-        return {
-            type: 'text',
-            value: getText('FOOD_DESCRIPTION'),
-            className: 'food-desc-text'
-        };
-    }
-
-    // Priority 2: Loading Phase
-    if (state.appPhase === 'loading' && state.loadingStep === 'instructions') {
-        return {
-            type: 'text',
-            value: getText('INTRO'),
-            className: 'instructions-text'
-        };
-    }
-
-    return null;
-}
-
-/**
- * Renders a content definition into a specific container.
- * @param {HTMLElement} container 
- * @param {Object} contentDef { type, value/image, action, className, style }
- */
-function renderZoneContent(container, contentDef) {
-    if (!contentDef) return;
-
-    if (contentDef.type === 'button') {
-        const btn = document.createElement('div');
-        btn.className = contentDef.className || 'round-button';
-        if (contentDef.style) Object.assign(btn.style, contentDef.style);
+    // 3. Props (Table & Bowl)
+    const isFoodPage = state.currentPageIndex === 1;
+    const isBaking = s.bakingState === 'baking';
+    const isBaked = s.bakingState === 'baked';
+    const isFeeding = s.feedingState !== 'idle' && s.feedingState !== 'done';
+    
+    if (state.appPhase === 'gameplay' && isFoodPage && !isBaking && !isBaked) {
+        dom.tableImage.style.display = 'block';
+        dom.tableImage.src = CONFIG.ASSETS.TABLE;
         
-        const img = document.createElement('img');
-        img.src = contentDef.image;
-        btn.appendChild(img);
+        // Bowl Logic
+        dom.bowlImage.style.display = 'block';
+        dom.bowlImage.className = 'game-layer prop'; // Reset anim classes
 
-        if (contentDef.action) {
-            // --- CORREZIONE: Gestione sicura del click/touch ---
-            btn.addEventListener('click', (e) => {
-                if (state.ui.blockClick) return; // Ignora se c'è stato un touch recente
-                animateButtonPress(e.currentTarget); 
-                contentDef.action();                
-            });
-
-            btn.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                state.ui.blockClick = true; // Blocca i click simulati
-            
-                // Sblocca i click dopo 500ms
-                setTimeout(() => { state.ui.blockClick = false; }, 500);
-
-                animateButtonPress(e.currentTarget); 
-                contentDef.action();                 
-            }, { passive: true });
+        if (s.feedingState === 'ready_to_eat' || s.feedingState === 'eating' || s.feedingState === 'sharing') {
+             dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_3; // Full bowl
+             if (s.feedingState === 'eating') dom.bowlImage.classList.add('bowl-eat-anim');
+             if (s.feedingState === 'sharing') dom.bowlImage.classList.add('bowl-share-anim');
+        } else if (!state.progress.food) {
+            // Ingredient selection phase
+            const count = s.foodSequence.length;
+            let bowlKey = 'BOWL_EMPTY';
+            if (count === 1) bowlKey = 'BOWL_STATE_1';
+            else if (count === 2) bowlKey = 'BOWL_STATE_2';
+            else if (count >= 3) bowlKey = 'BOWL_STATE_3';
+            dom.bowlImage.src = CONFIG.ASSETS[bowlKey];
+        } else {
+             // Already done with food task (revisiting page) -> Empty or Full? Usually Full/Done
+             dom.bowlImage.style.display = 'none'; // Or keep it full? Requirement implies arrows appear after sharing.
         }
 
-        container.appendChild(btn);
-    } else if (contentDef.type === 'text') {
-        const span = document.createElement('span');
-        span.textContent = contentDef.value;
-        if (contentDef.className) span.className = contentDef.className;
-        if (contentDef.style) Object.assign(span.style, contentDef.style);
-        container.appendChild(span);
-    } else if (contentDef.type === 'image') {
-        const img = document.createElement('img');
-        img.src = contentDef.image;
-        if (contentDef.className) img.className = contentDef.className;
-        if (contentDef.style) Object.assign(img.style, contentDef.style);
-        container.appendChild(img);
+    } else {
+        dom.tableImage.style.display = 'none';
+        dom.bowlImage.style.display = 'none';
+    }
+}
+
+function updateControls() {
+    // 1. Arrows
+    // Hide during loading, baking, or feeding interaction
+    const isBaking = state.gameplay.bakingState !== 'none';
+    const isFeeding = state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done';
+    const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding;
+
+    if (hideArrows) {
+        dom.navLeft.style.display = 'none';
+        dom.navRight.style.display = 'none';
+    } else {
+        dom.navLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
+        dom.navRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
+    }
+
+    // 2. Info Button
+    dom.infoContainer.innerHTML = ''; // clear
+    if (state.appPhase === 'gameplay' && !isBaking && !isFeeding) {
+        const infoBtn = document.createElement('img');
+        infoBtn.src = 'assets/defaults/info.png';
+        infoBtn.onclick = () => {
+             dom.infoContent.innerText = getText(`INFO_${PAGES[state.currentPageIndex].id.toUpperCase()}`);
+             dom.overlayInfo.style.display = 'flex';
+        };
+        dom.infoContainer.appendChild(infoBtn);
+    }
+
+    // 3. Dynamic Buttons
+    renderButtons();
+}
+
+function renderButtons() {
+    dom.buttonsContainer.innerHTML = '';
+    
+    if (state.appPhase !== 'gameplay') return;
+    
+    const page = PAGES[state.currentPageIndex];
+    if (shouldHideControls(page.id)) return;
+    
+    const content = page.content;
+    if (content.type === 'curved-buttons') {
+        
+        const count = content.count;
+        const radius = CONFIG.UI.BUTTON_RADIUS; 
+        
+        content.ids.forEach((id, index) => {
+            if (!shouldButtonBeVisible(page.id, id)) return;
+
+            // Simple distribution along an arc below the center
+            const span = 60; // +/- 60 degrees
+            const step = span * 2 / (count - 1 || 1);
+            const currentDeg = -span + (step * index); 
+            
+            const rad = (currentDeg + 90) * (Math.PI / 180);
+            
+            // Layout Y serves as anchor
+            const layoutY = CONFIG.LAYOUT.BUTTONS_Y; 
+            
+            const x = radius * Math.cos(rad);
+            const y = radius * Math.sin(rad);
+
+            const btn = document.createElement('div');
+            btn.className = 'round-button';
+            const size = 70; 
+            btn.style.width = `${size}px`;
+            btn.style.height = `${size}px`;
+            
+            // Position relative to Center + Layout Offset
+            // Note: Since we use radius * sin(rad) where rad starts at 0 for right, 90 for down...
+            // If we want the arc to bow UP, we need slightly different math, 
+            // but standard "radius around a point" works well enough.
+            
+            btn.style.left = `calc(50% + ${x}px - ${size/2}px)`;
+            // We shift the entire arc DOWN by the Layout Y %
+            // And we subtract radius because usually (0,0) is center of circle, so we need to offset
+            // so the TOP of the arc touches our desired Y? Or center?
+            // Let's just place the center of the imaginary circle at (50%, LayoutY - Radius).
+            // Then the buttons at the bottom of the circle will be at LayoutY.
+            
+            // Actually, let's keep it simple. Center of arc = (50%, BUTTONS_Y).
+            // Buttons are placed on the lower half.
+            btn.style.top = `calc(50% + ${layoutY}% + ${y}px - ${radius}px - ${size/2}px)`;
+            
+            // Image
+            const img = document.createElement('img');
+            const path = CONFIG.ASSETS.BUTTON_PREFIX.replace('{culture}', state.currentCulture) + `${page.id}${id}.png`;
+            img.src = path;
+            btn.appendChild(img);
+            
+            // Logic
+            setupDragAndDrop(btn, btn.style.left, btn.style.top, () => {
+                return handleInteraction(id, page.id);
+            });
+            
+            dom.buttonsContainer.appendChild(btn);
+        });
+    }
+}
+
+function updateContentZones() {
+    dom.zoneTop.innerHTML = '';
+    dom.zoneBot.innerHTML = '';
+
+    // Logic for what to show
+    let topContent = null;
+    let botContent = null;
+
+    if (state.ui.tempContent.top) topContent = state.ui.tempContent.top;
+    else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
+    else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME') };
+    
+    // Ritual Button Logic
+    if (state.currentPageIndex === 2 
+        && state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID 
+        && !state.progress.ritual
+        && !state.ui.isGifPlaying) {
+        
+        topContent = { 
+            type: 'button', 
+            image: CONFIG.ASSETS.RITUAL_BUTTON_ICON,
+            action: () => triggerRitual()
+        };
+    }
+
+    if (state.ui.tempContent.bot) botContent = state.ui.tempContent.bot;
+    else if (state.gameplay.bakingState === 'baked') botContent = { type:'text', value: getText('FOOD_DESCRIPTION') };
+    else if (state.appPhase === 'sequence_running' && state.loadingStep === 'instructions') botContent = { type:'text', value: getText('INTRO') };
+
+    renderZone(dom.zoneTop, topContent);
+    renderZone(dom.zoneBot, botContent);
+}
+
+function renderZone(container, content) {
+    if (!content) return;
+    if (content.type === 'text') {
+        const s = document.createElement('span');
+        s.textContent = content.value;
+        container.appendChild(s);
+    } else if (content.type === 'button') {
+        const b = document.createElement('div');
+        b.className = 'ritual-btn';
+        const i = document.createElement('img');
+        i.src = content.image;
+        b.appendChild(i);
+        b.onclick = (e) => { 
+            animateButtonPress(b); 
+            content.action(); 
+        };
+        container.appendChild(b);
     }
 }
 
 /* ==========================================================================
-   UI RENDERING & UPDATES
+   INTERACTIONS
+   ========================================================================== */
+
+function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    const onStart = (e) => {
+        if(state.ui.isAnyButtonDragging) return;
+        e.preventDefault(); 
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = element.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.body.appendChild(element);
+        element.style.position = 'fixed';
+        element.style.left = initialLeft + 'px';
+        element.style.top = initialTop + 'px';
+        element.style.transform = 'none'; // Clear translate
+        element.style.zIndex = 1000;
+        
+        animateButtonPress(element);
+
+        state.ui.isAnyButtonDragging = true;
+        
+        const onMove = (mv) => {
+            mv.preventDefault();
+            const dx = mv.clientX - startX;
+            const dy = mv.clientY - startY;
+            element.style.transform = `translate(${dx}px, ${dy}px)`;
+        };
+        
+        const onEnd = (endEvent) => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onEnd);
+            state.ui.isAnyButtonDragging = false;
+            
+            const btnRect = element.getBoundingClientRect();
+            const btnCx = btnRect.left + btnRect.width / 2;
+            const btnCy = btnRect.top + btnRect.height / 2;
+            
+            const screenCx = window.innerWidth / 2;
+            const screenCy = window.innerHeight / 2;
+            
+            const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
+            const DROP_THRESHOLD = 150; // px
+            
+            let success = false;
+            if (dist < DROP_THRESHOLD) {
+                success = onDropCallback();
+            }
+            
+            if (!success) {
+                element.style.transition = 'transform 0.3s';
+                element.style.transform = 'translate(0,0)';
+                setTimeout(() => {
+                    dom.buttonsContainer.appendChild(element);
+                    element.style.transition = '';
+                    element.style.position = 'absolute';
+                    element.style.left = resetLeft;
+                    element.style.top = resetTop;
+                    element.style.transform = ''; 
+                    element.style.zIndex = '';
+                }, 300);
+            } else {
+                element.style.display = 'none'; 
+            }
+        };
+        
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onEnd);
+    };
+
+    element.addEventListener('pointerdown', onStart);
+    element.style.touchAction = 'none';
+}
+
+function handleInteraction(buttonId, pageId) {
+    if (pageId === 'food') {
+        const idx = state.gameplay.foodSequence.length;
+        const correct = CONFIG.RULES.CORRECT_FOOD_ORDER[idx];
+        if (buttonId === correct) {
+            state.gameplay.foodSequence.push(buttonId);
+            if (state.gameplay.foodSequence.length === 3) {
+                startBaking();
+            } else {
+                updateUI();
+            }
+            return true;
+        } else {
+            triggerHardware();
+            return false;
+        }
+    } else if (pageId === 'dress') {
+        state.gameplay.chosenDressId = buttonId;
+        state.progress.dress = true;
+        state.gameplay.currentPetImage = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
+        if (buttonId !== CONFIG.RULES.CORRECT_DRESS_ID) triggerHardware();
+        updateUI();
+        return true;
+    }
+    return false;
+}
+
+function startBaking() {
+    state.gameplay.bakingState = 'baking';
+    // NOTE: progress.food is NOT set here, but in the eating phase
+    updateUI();
+    showTempMessage('bot', 'COOKING', CONFIG.GIF_DURATION_MS);
+    
+    // Play GIF logic
+    state.ui.isGifPlaying = true;
+    dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_BAKING);
+    
+    setTimeout(() => {
+        state.ui.isGifPlaying = false;
+        state.gameplay.bakingState = 'baked';
+        updateUI();
+    }, CONFIG.GIF_DURATION_MS);
+}
+
+function triggerRitual() {
+    state.progress.ritual = true;
+    state.ui.isGifPlaying = true;
+    dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_RITUAL);
+    updateUI();
+    setTimeout(() => {
+        state.ui.isGifPlaying = false;
+        updateUI();
+    }, CONFIG.GIF_DURATION_MS);
+}
+
+/* ==========================================================================
+   HELPERS & UTILS
    ========================================================================== */
 
 function getAssetPath(pattern) {
     return pattern.replace('{culture}', state.currentCulture);
 }
 
-function updateUI() {
-    updateProgressBar();
-    updatePetImage();
-    updateBowlImage();
-    updateContentZones(); // Updated to generic function
-    renderSection3();
-
-    // Update Navigation Arrows
-    if (state.appPhase === 'loading') {
-        dom.navContainerLeft.style.display = 'none';
-        dom.navContainerRight.style.display = 'none';
-    } else {
-        dom.navContainerLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
-        dom.navContainerRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
-    }
-}
-function updateProgressBar() {
-    if (state.appPhase === 'loading') {
-        dom.progressBarImage.style.display = 'none';
-        return;
-    }
-    dom.progressBarImage.style.display = 'block';
-
-    let score = 0;
-    if (state.progress.food) score++;
-    if (state.progress.dress) score++;
-    if (state.progress.ritual) score++;
-
-    dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
+function getText(key) {
+    const tpl = CONFIG.TEXT_TEMPLATES[key] || "";
+    const vars = (CULTURE_CONFIGS[state.currentCulture]?.VARIABLES) || {};
+    return tpl.replace(/{(\w+)}/g, (_, k) => vars[k] || "");
 }
 
-function updatePetImage() {
-    // If a GIF is playing (gameplay specific), do not override it
-    if (state.ui.isGifPlaying) {
-        dom.backgroundPetImage.style.display = 'none';
-        dom.tableImage.style.display = 'none';
-        dom.petImage.classList.remove('is-bowl');
-        return;
-    }
-
-    // Default: Hide layers and remove bowl styling
-    dom.backgroundPetImage.style.display = 'none';
-    dom.tableImage.style.display = 'none';
-    dom.petImage.classList.remove('is-bowl');
-
-    let newImagePath;
-
-    if (state.appPhase === 'loading') {
-        if (state.loadingStep === 'static') {
-            newImagePath = CONFIG.ASSETS.LOADING_STATIC;
-        } else if (['animation', 'welcome', 'instructions'].includes(state.loadingStep)) {
-            newImagePath = CONFIG.ASSETS.LOADING_ANIMATION;
-        } else {
-            // Fallback
-            newImagePath = CONFIG.ASSETS.PET_DEFAULT;
-        }
-    } else if (state.gameplay.bakingState === 'baked') {
-        newImagePath = CONFIG.ASSETS.BAKED_FOOD;
-    } else if (state.currentPageIndex === 1 && state.gameplay.bakingState === 'none') { // Food Page (Bowl Sequence)
-        
-        dom.petImage.classList.add('is-bowl');
-
-        // 1. Show Background Pet
-        dom.backgroundPetImage.style.display = 'block';
-        dom.backgroundPetImage.src = getAssetPath(state.gameplay.currentPetImage);
-
-        // 2. Show Table
-        dom.tableImage.style.display = 'block';
-        dom.tableImage.src = CONFIG.ASSETS.TABLE;
-
-        // 3. Determine Bowl State
-        const count = state.gameplay.foodSequence.length;
-        if (state.gameplay.feedingState !== 'ready_to_eat' && state.gameplay.feedingState !== 'ready_to_share' && count === 0) newImagePath = CONFIG.ASSETS.BOWL_EMPTY;
-        else if (state.gameplay.feedingState === 'ready_to_share' || count === 1) newImagePath = CONFIG.ASSETS.BOWL_STATE_1;
-        else if (count === 2) newImagePath = CONFIG.ASSETS.BOWL_STATE_2;
-        else newImagePath = CONFIG.ASSETS.BOWL_STATE_3; // fallback or 3
-        
-    } else {
-        // All other pages show the current pet state (default or dressed)
-        newImagePath = state.gameplay.currentPetImage;
-    }
-
-    // Ensure we have a valid path (getAssetPath handles {culture} if present in string)
-    // Note: Bowl assets don't have {culture} but getAssetPath is safe to call.
-    const finalPath = getAssetPath(newImagePath);
-
-    if (dom.petImage.getAttribute('src') !== finalPath) {
-        console.log(`Changing pet image to: ${finalPath}`);
-        dom.petImage.src = finalPath;
-    }
+function showTempMessage(zone, key, duration) {
+    state.ui.tempContent[zone] = { type: 'text', value: getText(key) };
+    updateUI();
+    state.ui.tempTimers[zone] = setTimeout(() => {
+        state.ui.tempContent[zone] = null;
+        updateUI();
+    }, duration);
 }
 
-function updateBowlImage() {
-    // --- CORREZIONE: Controllo sicurezza se manca l'elemento nell'HTML ---
-    if (!dom.bowlImage) return;
-
-    // La ciotola appare SOLO se:
-    // 1. Siamo a pagina "food" (indice 1)
-    // 2. E il gioco del cibo NON è ancora finito
-    const isFoodPage = state.currentPageIndex === 1; 
-    const isFoodDone = state.progress.food;
-
-    if (isFoodPage && !isFoodDone) {
-        dom.bowlImage.style.display = 'block';
-        dom.tableImage.style.display = 'block';
-
-        // Calcola quale stato della ciotola mostrare
-        const count = state.gameplay.foodSequence.length;
-        let bowlPath = CONFIG.ASSETS.BOWL_EMPTY;
-
-        if (count === 1) bowlPath = CONFIG.ASSETS.BOWL_STATE_1;
-        else if (count === 2) bowlPath = CONFIG.ASSETS.BOWL_STATE_2;
-        else if (count >= 3) bowlPath = CONFIG.ASSETS.BOWL_STATE_3;
-
-        dom.bowlImage.src = getAssetPath(bowlPath);
-    } else {
-        // Nascondi la ciotola se siamo in altre pagine o abbiamo finito
-        dom.bowlImage.style.display = 'none';
-        dom.tableImage.style.display = 'none';
-    }
-}
-
-function renderSection3() {
-    dom.section3.innerHTML = '';
-
-    if (state.appPhase === 'loading') return;
-
-    renderInfoButton();
-
-    const page = PAGES[state.currentPageIndex];
-    const content = page.content;
-
-    if (content.type === 'empty') return;
-    if (shouldHideControls(page.id)) return;
-
-    if (content.type === 'curved-buttons') {
-        renderCurvedButtons(content, page.id);
-    }
-}
-
-function renderInfoButton() {
-    const size = 30;
-    const btn = document.createElement('div');
-    btn.className = 'round-button';
-    btn.id = 'info-button';
-    
-    Object.assign(btn.style, {
-        width: `${size}px`,
-        height: `${size}px`,
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10
-    });
-
-    const img = document.createElement('img');
-    img.src = 'assets/defaults/info.png';
-    btn.appendChild(img);
-
-    btn.onclick = () => {
-        animateButtonPress(btn);
-        const pageId = PAGES[state.currentPageIndex].id;
-        let textKey = 'INFO_HOME'; // Default
-
-        if (pageId === 'food') textKey = 'INFO_FOOD';
-        else if (pageId === 'dress') textKey = 'INFO_DRESS';
-
-        dom.infoContent.innerText = getText(textKey);
-        dom.infoOverlay.style.display = 'flex';
-    };
-
-    dom.section3.appendChild(btn);
+function animateButtonPress(el) {
+    CLICK_SOUND.currentTime = 0;
+    CLICK_SOUND.play().catch(()=>{});
+    el.classList.add('clicked');
+    setTimeout(() => el.classList.remove('clicked'), 200);
 }
 
 function shouldHideControls(pageId) {
+    // Hide controls if we are baking, or if food is done (revisiting), OR if feeding sequence is active
     if (pageId === 'food') {
-        if (state.progress.food) return true;
-        if (state.gameplay.foodSequence.length === CONFIG.RULES.CORRECT_FOOD_ORDER.length) return true;
-        if (state.gameplay.bakingState !== 'none') return true;
-        if (state.gameplay.feedingState !== 'idle') return true;
-        return false;
+         if (state.gameplay.bakingState !== 'none') return true;
+         if (state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done') return true;
+         if (state.progress.food) return true; // Already done
     }
     if (pageId === 'dress' && state.progress.ritual) return true;
-    if (pageId === 'ritual' && state.progress.ritual) return true;
     return false;
 }
-
-function shouldButtonBeVisible(pageId, buttonId) {
-    if (pageId === 'food') {
-        return !state.gameplay.foodSequence.includes(buttonId);
-    }
-    if (pageId === 'dress') {
-        return state.gameplay.chosenDressId !== buttonId;
-    }
+function shouldButtonBeVisible(pageId, id) {
+    if (pageId === 'food') return !state.gameplay.foodSequence.includes(id);
+    if (pageId === 'dress') return state.gameplay.chosenDressId !== id;
     return true;
 }
 
-function renderCurvedButtons(content, pageId) {
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'button-container';
-    dom.section3.appendChild(buttonContainer);
-
-    // Note: Drop zone visual is hidden/removed in this version 
-    // as we drop into Section 2.
-
-    const numButtons = content.count;
-    const buttonSize = 60 + 40 / numButtons;
-
-    const radius = CONFIG.UI.BUTTON_RADIUS;
-    const startAngle = 180;
-    const endAngle = 0;
-    const angleStep = (startAngle - endAngle) / (numButtons + 1);
-
-    content.ids.forEach((id, index) => {
-        const button = createButtonElement(id, pageId, buttonSize);
-
-        if (!shouldButtonBeVisible(pageId, id)) {
-            button.style.display = 'none';
-        }
-
-        const angle = startAngle - (index + 1) * angleStep;
-        const rad = angle * Math.PI / 180;
-        const x = radius * Math.cos(rad);
-        const y = radius * Math.sin(rad);
-
-        const initialLeft = `calc(50% + ${x}px - ${buttonSize / 2}px)`;
-        const initialTop = `calc(-50% + ${y}px - ${buttonSize / 2}px)`;
-
-        button.style.left = initialLeft;
-        button.style.top = initialTop;
-
-        if (numButtons === 1) {
-            button.onclick = (e) => {
-                handleButtonPress(id, pageId);
-                e.currentTarget.style.display = 'none';
-            };
-        } else {
-            setupDragAndDrop(button, buttonContainer, initialLeft, initialTop, () => {
-                return handleButtonPress(id, pageId);
-            });
-        }
-
-        buttonContainer.appendChild(button);
-    });
-    /*
-    Blocco di test COMMENTATO:
-    - ascolta il tasto "F"
-    - avvia una GIF
-    - invia un comando seriale ad Arduino
-    (usato solo per debug / prototipazione hardware)
-    */
+function triggerHardware() {
+    const ip = CONFIG.HARDWARE?.ESP_IP;
+    if(ip) fetch(`${ip}/servo`).catch(e => console.warn("Hardware err", e));
 }
-
-function createButtonElement(id, pageId, size) {
-    const button = document.createElement('div');
-    button.className = 'round-button';
-    button.style.width = `${size}px`;
-    button.style.height = `${size}px`;
-
-    const img = document.createElement('img');
-
-    // Construct Path: assets/{culture}/buttons/{pageId}{id}.png
-    const pathPrefix = getAssetPath(CONFIG.ASSETS.BUTTON_PREFIX);
-    const imgName = `${pageId}${id}.png`;
-    img.src = pathPrefix + imgName;
-
-    // Error handling for missing assets (optional but helpful during dev)
-    img.onerror = () => {
-        console.warn(`Missing asset: ${img.src}`);
-    };
-
-    button.appendChild(img);
-
-    // --- AGGIUNTA: Attiva l'animazione automaticamente ---
-    // Funziona sia col click del mouse che col tocco
-    button.addEventListener('mousedown', () => animateButtonPress(button));
-    button.addEventListener('touchstart', () => animateButtonPress(button), { passive: true });
-
-    return button;
-}
-
-/* ==========================================================================
-   DRAG & DROP LOGIC
-   ========================================================================== */
-
-function setupDragAndDrop(button, container, resetLeft, resetTop, onSuccess) {
-let startX, startY;
-    let isDraggingStarted = false; // Flag per sapere se abbiamo superato la soglia
-
-    const onMouseDown = (e) => {
-        if (state.ui.isAnyButtonDragging) return;
-        // Fa partire l'animazione (rimbalzo) appena tocchi il bottone
-        animateButtonPress(button);
-
-        // Registra coordinate iniziali
-        startX = e.touches ? e.touches[0].clientX : e.clientX;
-        startY = e.touches ? e.touches[0].clientY : e.clientY;
-        isDraggingStarted = false;
-
-        // Aggiungi listener globali
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-        document.addEventListener('touchmove', onMouseMove, { passive: false });
-        document.addEventListener('touchend', onMouseUp);
-    };
-
-    const onMouseMove = (e) => {
-        const currentX = e.touches ? e.touches[0].clientX : e.clientX;
-        const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        // Se non abbiamo ancora iniziato a trascinare, controlliamo la distanza (SOGLIA)
-        if (!isDraggingStarted) {
-            const diffX = Math.abs(currentX - startX);
-            const diffY = Math.abs(currentY - startY);
-
-            // Se ci siamo mossi meno di 5px, non fare nulla (è ancora un click)
-            if (diffX < 5 && diffY < 5) return;
-
-            // --- INIZIO TRASCINAMENTO REALE ---
-            isDraggingStarted = true;
-            state.ui.isAnyButtonDragging = true;
-            
-            // Solo ORA stacchiamo il bottone dal layout
-            const rect = button.getBoundingClientRect();
-            button.style.position = 'fixed';
-            button.style.left = `${rect.left}px`;
-            button.style.top = `${rect.top}px`;
-            button.style.zIndex = 1000;
-            button.style.width = `${rect.width}px`;
-            button.style.height = `${rect.height}px`;
-        }
-
-        // Logica di movimento (avviene solo se isDraggingStarted è true)
-        if (isDraggingStarted) {
-            e.preventDefault(); // Blocca lo scroll della pagina
-            
-            // Calcola lo spostamento rispetto alla posizione iniziale del click
-            // (Semplificato per evitare scatti al momento dell'aggancio)
-            const rect = button.getBoundingClientRect();
-            const moveX = currentX - startX;
-            const moveY = currentY - startY;
-
-            // Aggiorniamo startX/Y per il prossimo frame per avere un movimento relativo
-            startX = currentX;
-            startY = currentY;
-
-            button.style.left = `${rect.left + moveX}px`;
-            button.style.top = `${rect.top + moveY}px`;
-        }
-    };
-
-    const onMouseUp = (e) => {
-        // Pulizia listener
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        document.removeEventListener('touchmove', onMouseMove);
-        document.removeEventListener('touchend', onMouseUp);
-
-        if (isDraggingStarted) {
-            // Se stavamo trascinando, gestiamo il rilascio (Drop)
-            state.ui.isAnyButtonDragging = false;
-            isDraggingStarted = false;
-
-            const section2 = document.getElementById('section2');
-            let droppedSuccessfully = false;
-
-            if (checkDropZoneCollision(button, section2)) {
-                droppedSuccessfully = onSuccess();
-            }
-
-            if (!droppedSuccessfully) {
-                // Torna indietro
-                button.style.position = 'absolute';
-                button.style.zIndex = 'auto';
-                button.style.left = resetLeft;
-                button.style.top = resetTop;
-                button.style.transition = 'left 0.3s, top 0.3s';
-                setTimeout(() => { button.style.transition = ''; }, 300);
-            }
-        } else {
-            // Se NON stavamo trascinando, era un semplice click!
-            // L'azione del click è già gestita dal listener 'click' o 'mousedown' che hai messo per l'animazione
-            // Ma se serve l'azione logica qui (nel caso non usi onclick separato):
-            // onSuccess(); // Scommenta se il click non funziona
-        }
-    };
-
-    button.addEventListener('mousedown', onMouseDown);
-    button.addEventListener('touchstart', onMouseDown, { passive: true });
-}
-
-function checkDropZoneCollision(button, targetElement) {
-    const btnRect = button.getBoundingClientRect();
-    const targetRect = targetElement.getBoundingClientRect();
-
-    return !(
-        btnRect.right < targetRect.left ||
-        btnRect.left > targetRect.right ||
-        btnRect.bottom < targetRect.top ||
-        btnRect.top > targetRect.bottom
-    );
-}
-
-/* ==========================================================================
-   INPUT & EVENTS
-   ========================================================================== */
-
-function setupEventListeners() {
-    dom.ovalContainer.addEventListener('touchstart', (e) => {
-        state.ui.touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-        dom.ovalContainer.addEventListener('touchend', (e) => {
-            state.ui.touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-    
-    // Freccia Sinistra (Click mouse)
-    dom.navArrowLeft.addEventListener('click', () => {
-        animateButtonPress(dom.navArrowLeft);
-        handleNavClick('prev')
-    });
-    // Freccia Sinistra (Touch telefono)
-    dom.navArrowLeft.addEventListener('touchstart', (e) => {
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation(); 
-
-        animateButtonPress(e.currentTarget);
-        handleNavClick('prev');
-    }, { passive: false });
-    // Freccia Destra (Click mouse)
-    dom.navArrowRight.addEventListener('click', () => {
-        animateButtonPress(dom.navArrowRight);
-        handleNavClick('next');
-    });
-    // Freccia Destra (Touch telefono)
-    dom.navArrowRight.addEventListener('touchstart', (e) => {
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation();
-
-        animateButtonPress(e.currentTarget);
-        handleNavClick('next');
-    }, { passive: false });
-
-    // Info Overlay Listener
-    dom.infoOverlay.addEventListener('click', () => {
-        dom.infoOverlay.style.display = 'none';
-    });
-
-    setupMouseNavigation();
-    window.addEventListener('devicemotion', handleShake);
-
-    // Pet Undress Listeners
-    dom.petImage.addEventListener('mousedown', startUndressDrag);
-    dom.petImage.addEventListener('touchstart', startUndressDrag, { passive: false });
-
-    // Global Interaction (Startup Sequence & Baked Food Dismissal)
-    const handleGlobalClick = () => {
-        const isBlackScreenVisible = window.getComputedStyle(dom.blackScreenOverlay).display !== 'none';
-        
-        // 1. Startup Sequence
-        if (!isBlackScreenVisible && state.appPhase === 'loading' && state.loadingStep === 'static') {
-            continueStartupSequence();
-            return;
-        }
-
-        // 2. Baked Food Screen (Transition to Eating)
-        if (!isBlackScreenVisible && state.gameplay.bakingState === 'baked') {
-             console.log('Transitioning from Baked Food to Ready to Eat');
-             state.gameplay.bakingState = 'none';
-             state.gameplay.feedingState = 'ready_to_eat';
-             updateUI();
-             return;
-        }
-
-        // 3. Feeding Sequence (Eat)
-        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_eat' && !state.ui.isAnimating) {
-            console.log('Eating Action');
-            state.ui.isAnimating = true;
-            dom.petImage.classList.add('bowl-eat-anim');
-
-            setTimeout(() => {
-                state.progress.food = true; // Mark as done here
-                state.gameplay.feedingState = 'ready_to_share';
-                dom.petImage.classList.remove('bowl-eat-anim');
-                state.ui.isAnimating = false;
-                updateUI();
-            }, 1000); // Match CSS transition duration
-            return;
-        }
-
-        // 4. Feeding Sequence (Share)
-        if (!isBlackScreenVisible && state.gameplay.feedingState === 'ready_to_share' && !state.ui.isAnimating) {
-            console.log('Sharing Action');
-            state.ui.isAnimating = true;
-            dom.petImage.classList.add('bowl-share-anim');
-
-            setTimeout(() => {
-                state.gameplay.feedingState = 'complete';
-                dom.petImage.classList.remove('bowl-share-anim');
-                state.ui.isAnimating = false;
-                updateUI();
-            }, 1000); // Match CSS transition duration
-            return;
-        }
-    };
-    
-    // Attach to body or specific container to ensure catch
-    document.body.addEventListener('click', handleGlobalClick);
-    document.body.addEventListener('touchstart', (e) => {
-        const isBlackScreenVisible = window.getComputedStyle(dom.blackScreenOverlay).display !== 'none';
-        // Only trigger if not interacting with other UI elements essentially
-        if (!isBlackScreenVisible) {
-             if (state.appPhase === 'loading' && state.loadingStep === 'static') {
-                continueStartupSequence();
-             }
-             if (state.gameplay.bakingState === 'baked') {
-                console.log('Dismissing baked food view');
-                state.gameplay.bakingState = 'none';
-                updateUI();
-             }
-        }
-    }, { passive: true });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 's' || e.key === 'S') wakeUp();
-        // Debug: press 'R' to randomize culture
-        if (e.key === 'r' || e.key === 'R') resetGame('kurd');
-    });
-}
-
-function startUndressDrag(e) {
-    // Only allow undress if:
-    // 1. We are on the 'dress' page (id='dress')
-    // 2. A dress is currently chosen
-    const dressPageIndex = PAGES.findIndex(p => p.id === 'dress');
-    if (state.currentPageIndex !== dressPageIndex || !state.gameplay.chosenDressId) {
-        return;
-    }
-
-    e.preventDefault();
-    e.stopPropagation(); // Prevent page swipe
-
-    const touch = e.touches ? e.touches[0] : e;
-    const startX = touch.clientX;
-    const startY = touch.clientY;
-
-    // Create Ghost Element (The dress button icon)
-    const ghost = document.createElement('img');
-    const pathPrefix = getAssetPath(CONFIG.ASSETS.BUTTON_PREFIX);
-    const imgName = `dress${state.gameplay.chosenDressId}.png`;
-    ghost.src = pathPrefix + imgName;
-    
-    ghost.style.position = 'fixed';
-    ghost.style.width = '60px'; // Approximate button size
-    ghost.style.height = '60px';
-    ghost.style.zIndex = 1000;
-    ghost.style.pointerEvents = 'none';
-    ghost.style.left = `${startX - 30}px`;
-    ghost.style.top = `${startY - 30}px`;
-    
-    document.body.appendChild(ghost);
-
-    // Temporarily show default pet (undressed)
-    const defaultPetPath = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
-    dom.petImage.src = defaultPetPath;
-
-    let isDragging = true;
-
-    const moveUndressDrag = (ev) => {
-        if (!isDragging) return;
-        ev.preventDefault(); // Prevent scrolling
-        const t = ev.touches ? ev.touches[0] : ev;
-        ghost.style.left = `${t.clientX - 30}px`;
-        ghost.style.top = `${t.clientY - 30}px`;
-    };
-
-    const endUndressDrag = (ev) => {
-        if (!isDragging) return;
-        isDragging = false;
-        
-        // Remove listeners
-        document.removeEventListener('mousemove', moveUndressDrag);
-        document.removeEventListener('mouseup', endUndressDrag);
-        document.removeEventListener('touchmove', moveUndressDrag);
-        document.removeEventListener('touchend', endUndressDrag);
-
-        // Check drop position relative to Pet Image
-        // If dropped OUTSIDE the pet image rect, we confirm undress.
-        const t = ev.changedTouches ? ev.changedTouches[0] : ev;
-        const dropX = t.clientX;
-        const dropY = t.clientY;
-
-        const petRect = dom.petImage.getBoundingClientRect();
-        console.log('Pet Rect:', petRect);
-        
-        // Define "Outside" as not colliding with the pet rect
-        const isInsidePet = (
-            dropX >= petRect.left + 80 &&
-            dropX <= petRect.right - 80 &&
-            dropY >= petRect.top + 150 &&
-            dropY <= petRect.bottom - 150
-        );
-
-        document.body.removeChild(ghost);
-
-        if (!isInsidePet) {
-            // Confirm Undress
-            console.log("Undressed!");
-            state.gameplay.chosenDressId = null;
-            state.progress.dress = false;
-            state.gameplay.currentPetImage = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
-            updateUI(); // This will show buttons again and keep pet default
-        } else {
-            // Cancel Undress (restore dressed image)
-            console.log("Undress cancelled");
-            updatePetImage(); // Will restore the dressed image from state
-        }
-    };
-
-    document.addEventListener('mousemove', moveUndressDrag);
-    document.addEventListener('mouseup', endUndressDrag);
-    document.addEventListener('touchmove', moveUndressDrag, { passive: false });
-    document.addEventListener('touchend', endUndressDrag);
-}
-
-function setupMouseNavigation() {
-    dom.ovalContainer.style.cursor = 'grab';
-
-    dom.ovalContainer.addEventListener('mousedown', (e) => {
-        state.ui.isMouseDragging = true;
-        state.ui.touchStartX = e.screenX;
-        dom.ovalContainer.style.cursor = 'grabbing';
-    });
-
-    dom.ovalContainer.addEventListener('mouseup', (e) => {
-        if (state.ui.isMouseDragging) {
-            state.ui.touchEndX = e.screenX;
-            handleSwipe();
-            state.ui.isMouseDragging = false;
-            dom.ovalContainer.style.cursor = 'grab';
-        }
-    });
-
-    dom.ovalContainer.addEventListener('mouseleave', () => {
-        if (state.ui.isMouseDragging) {
-            state.ui.isMouseDragging = false;
-            dom.ovalContainer.style.cursor = 'grab';
-        }
-    });
-}
-
-function handleNavClick(direction) {
-    if (direction === 'prev') {
-        if (state.currentPageIndex > 0) state.currentPageIndex--;
-    } else if (direction === 'next') {
-        if (state.currentPageIndex < PAGES.length - 1) state.currentPageIndex++;
-    }
-    updateUI();
-    resetInactivityTimer();
-}
-
-function handleSwipe() {
-    const diff = state.ui.touchEndX - state.ui.touchStartX;
-    if (Math.abs(diff) > CONFIG.UI.SWIPE_THRESHOLD) {
-        if (diff < 0) {
-            if (state.currentPageIndex < PAGES.length - 1) state.currentPageIndex++;
-        } else {
-            if (state.currentPageIndex > 0) state.currentPageIndex--;
-        }
-        updateUI();
-        resetInactivityTimer();
-    }
-}
-
-function handleShake(event) {
-    const acc = event.accelerationIncludingGravity || event.acceleration;
-    if (!acc) return;
-    const x = acc.x || 0;
-    const y = acc.y || 0;
-    const z = acc.z || 0;
-    const totalAcc = Math.sqrt(x ** 2 + y ** 2 + z ** 2);
-
-    const threshold = (!event.accelerationIncludingGravity && event.acceleration)
-        ? CONFIG.UI.SHAKE_THRESHOLD / 2
-        : CONFIG.UI.SHAKE_THRESHOLD;
-
-    if (totalAcc > threshold) wakeUp();
-}
-
-function showBlackScreen() {
-    dom.blackScreenOverlay.style.display = 'block';
-}
-
-// --- FUNZIONE WAKEUP CORRETTA ---
-function wakeUp() {
-    // 1. Controlliamo lo stile COMPUTATO per sicurezza
-    const overlayStyle = window.getComputedStyle(dom.blackScreenOverlay);
-    const isOverlayVisible = overlayStyle.display !== 'none';
-
-    // 2. Attiviamo se lo schermo è visibile OPPURE se il gioco non è partito
-    if (isOverlayVisible || !state.hasStarted) {
-        dom.blackScreenOverlay.style.display = 'none';
-        
-        if (!state.hasStarted) {
-            console.log("WakeUp: Primo avvio rilevato!");
-            state.hasStarted = true;
-            handleStartupSequence();
-        }
-        
-        resetInactivityTimer();
-    }
-}
-// ----------------------------------
 
 function resetInactivityTimer() {
     if (state.ui.inactivityTimer) clearTimeout(state.ui.inactivityTimer);
-    state.ui.inactivityTimer = setTimeout(showBlackScreen, CONFIG.TIMEOUT_MS);
+    state.ui.inactivityTimer = setTimeout(() => {
+        // Only show black screen overlay if we are already in gameplay
+        if (state.appPhase === 'gameplay') {
+            dom.overlayBlack.style.display = 'block';
+            state.appPhase = 'black_screen'; // Effectively go back to sleep
+        }
+    }, CONFIG.TIMEOUT_MS);
 }
 
-function triggerArduino() {
-    fetch("http://192.168.1.118/servo")
-        .then(res => res.text())
-        .then(text => console.log("Risposta ESP32:", text))
-        .catch(err => console.error("Errore:", err));
+function setupEventListeners() {
+    // Navigation
+    const nav = (dir) => {
+        if(dir==='prev' && state.currentPageIndex > 0) state.currentPageIndex--;
+        if(dir==='next' && state.currentPageIndex < PAGES.length-1) state.currentPageIndex++;
+        updateUI();
+        resetInactivityTimer();
+    };
+    dom.navLeft.onclick = () => nav('prev');
+    dom.navRight.onclick = () => nav('next');
+    
+    // Swipe
+    dom.ovalContainer.addEventListener('touchstart', e => state.ui.touchStartX = e.touches[0].clientX, {passive:true});
+    dom.ovalContainer.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - state.ui.touchStartX;
+        if(Math.abs(dx) > CONFIG.UI.SWIPE_THRESHOLD) nav(dx < 0 ? 'next' : 'prev');
+    });
+
+    // Shake
+    window.addEventListener('devicemotion', e => {
+        const acc = e.accelerationIncludingGravity || e.acceleration;
+        if(!acc) return;
+        if ((Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z)) > CONFIG.UI.SHAKE_THRESHOLD) wakeUp();
+    });
+
+    // 'S' Key for Shake Simulation
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 's' || e.key === 'S') wakeUp();
+    });
+
+    // Global Click State Machine
+    document.body.addEventListener('click', () => {
+        resetInactivityTimer();
+
+        if (state.appPhase === 'black_screen') {
+            // Wake up usually handled by Shake/S, but clicking might also wake from sleep timeout?
+            // Requirement 3: "click... only when screen is not black" for startup sequence.
+            // But Requirement 2 says Shake/S wakes it up.
+            // Requirement 11/12/13: Clicks drive eating sequence.
+        } else if (state.appPhase === 'waiting_for_click') {
+            handleStartupSequence();
+        } else if (state.appPhase === 'gameplay') {
+            
+            // Food/Feeding Logic
+            if (state.currentPageIndex === 1) { // Food Page
+                const s = state.gameplay;
+                
+                if (s.bakingState === 'baked') {
+                    // 11. Click on baked -> Ready to eat (Full bowl)
+                    s.bakingState = 'none';
+                    s.feedingState = 'ready_to_eat';
+                    updateUI();
+                } else if (s.feedingState === 'ready_to_eat') {
+                    // 12. Click -> Eat Anim + Progress
+                    s.feedingState = 'eating';
+                    state.progress.food = true;
+                    updateUI();
+                } else if (s.feedingState === 'eating') {
+                    // 13. Click -> Share Anim
+                    s.feedingState = 'sharing';
+                    updateUI();
+                    
+                    // 14. After share -> Done (Arrows appear). 
+                    // Let's use a timeout or next click? Requirement 14: "after the eat and share animation arrows appears"
+                    // Animation usually takes ~1-2s? Let's use a timeout for flow or require another click.
+                    // Given the flow, auto-transition to done after animation is safer so user sees arrows.
+                    setTimeout(() => {
+                        s.feedingState = 'done';
+                        updateUI();
+                    }, 2000); 
+                }
+            }
+        }
+    });
+
+    // Info Overlay Close
+    dom.overlayInfo.addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        dom.overlayInfo.style.display = 'none';
+    });
 }
 
-async function init() {
-    // Load Configuration
-    await loadConfiguration();
-
-    // Initialize game state (select culture) immediately
-    resetGame();
-
-    // Start loading sequence
-    // handleStartupSequence(); // Moved to wakeUp()
-    setupEventListeners();
+function wakeUp() {
+    if (state.appPhase === 'black_screen') {
+        dom.overlayBlack.style.display = 'none';
+        state.appPhase = 'waiting_for_click';
+        updateUI(); // Shows static loading image
+        resetInactivityTimer();
+    }
 }
 
 async function handleStartupSequence() {
-    console.log('Starting App Sequence...');
-
-    // Phase 1: Static Loading Image. Waits for user click/touch.
-    state.appPhase = 'loading';
+    state.appPhase = 'sequence_running';
     state.loadingStep = 'static';
+    // Transition: Fade out static image? 
+    // Logic: 'sequence_running' + 'static' shows LOADING_STATIC.
+    // We want to move to 'welcome' (Animation)
+    
+    // Immediate or slight delay?
+    state.loadingStep = 'welcome';
     updateUI();
-}
-
-async function continueStartupSequence() {
-    // Check to avoid double triggering or triggering in wrong phase
-    if (state.loadingStep !== 'static') return;
+    await new Promise(r => setTimeout(r, 3000));
     
-    console.log('Continuing Startup Sequence...');
-
-    // Fade away effect (1 second)
-    dom.petImage.style.transition = 'opacity 1s ease-in-out';
-    dom.petImage.style.opacity = '0';
-    
-    // Wait for the fade away to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Phase 2: Animation + Welcome Text
-    // Note: updatePetImage now shows the GIF during 'welcome' step
-    state.loadingStep = 'welcome'; 
-    
-    // Reset opacity to show the new content
-    dom.petImage.style.opacity = '1';
-    
-    updateUI();
-    
-    triggerArduino(); // Send command to Arduino
-
-    // Wait for Welcome text reading time (approx 3s or GIF duration)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Phase 3: Instructions Text (GIF continues because of updatePetImage logic)
     state.loadingStep = 'instructions';
     updateUI();
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Phase 4: Gameplay
+    await new Promise(r => setTimeout(r, 3000));
+    
     state.appPhase = 'gameplay';
-    updateUI(); // Reveal game UI
+    updateUI();
 }
 
 document.addEventListener('DOMContentLoaded', init);
-document.getElementById("test").addEventListener("click", () => triggerArduino());
+
