@@ -11,6 +11,7 @@
         "PET_DRESS": "assets/{culture}/pet/dress{id}.png",
         "PET_BAKING": "assets/{culture}/pet/baking.gif",
         "PET_RITUAL": "assets/{culture}/pet/ritual.gif",
+        "JUMP_ANIMATION": "assets/{culture}/pet/Jump.gif",
         "BOWL_EMPTY": "assets/defaults/bowl/empty.png",
         "BOWL_STATE_1": "assets/defaults/bowl/1.png",
         "BOWL_STATE_2": "assets/defaults/bowl/2.png",

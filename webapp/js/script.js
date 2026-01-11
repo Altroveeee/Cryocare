@@ -297,7 +297,11 @@ function updateImages() {
                 setTimeout(() => {
                     dom.bowlImage.src = CONFIG.ASSETS.BOWL_EMPTY;
                     dom.bowlImage.classList.remove('bowl-share-anim');
+                    dom.petImage.src = getAssetPath(CONFIG.ASSETS.JUMP_ANIMATION);
                 }, 1500);
+                setTimeout(() => {
+                    dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
+                }, 1500 + CONFIG.GIF_DURATION_MS);
              } else if (s.feedingState === 'ready_to_eat') {
                 dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_3; // Full bowl
                 dom.bowlImage.className = 'game-layer prop'; // Clear any leftover anims
@@ -741,7 +745,7 @@ function setupEventListeners() {
                     setTimeout(() => {
                         s.feedingState = 'done';
                         updateUI();
-                    }, 2000); 
+                    }, 1500 + CONFIG.GIF_DURATION_MS); // After share animation
                 }
             }
         }
