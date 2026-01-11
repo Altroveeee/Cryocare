@@ -527,7 +527,7 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
             const screenCy = window.innerHeight / 2;
             
             const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
-            const DROP_THRESHOLD = 150; // px
+            const DROP_THRESHOLD = 80; // px
             
             let success = false;
             if (dist < DROP_THRESHOLD) {
