@@ -389,7 +389,7 @@ function renderButtons() {
 
             const btn = document.createElement('div');
             btn.className = 'round-button';
-            const size = 70; 
+            const size = 40; 
             btn.style.width = `${size}px`;
             btn.style.height = `${size}px`;
             
@@ -452,7 +452,10 @@ function updateContentZones() {
 
     if (state.ui.tempContent.bot) botContent = state.ui.tempContent.bot;
     else if (state.gameplay.bakingState === 'baked') botContent = { type:'text', value: getText('FOOD_DESCRIPTION') };
-    else if (state.appPhase === 'sequence_running' && state.loadingStep === 'instructions') botContent = { type:'text', value: getText('INTRO') };
+    else if (state.appPhase === 'sequence_running' && state.loadingStep === 'instructions') {
+        topContent = { type:'text', value: getText('WELCOME') };
+        botContent = { type:'text', value: getText('INTRO') };
+    };
 
     renderZone(dom.zoneTop, topContent);
     renderZone(dom.zoneBot, botContent);
