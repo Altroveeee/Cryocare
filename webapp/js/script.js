@@ -580,7 +580,7 @@ function handleInteraction(buttonId, pageId) {
         }
     } else if (pageId === 'dress') {
         state.gameplay.chosenDressId = buttonId;
-        state.progress.dress = true;
+        state.progress.dress = buttonId === CONFIG.RULES.CORRECT_DRESS_ID;
         state.gameplay.currentPetImage = CONFIG.ASSETS.PET_DRESS.replace('{id}', buttonId);
         if (buttonId !== CONFIG.RULES.CORRECT_DRESS_ID) triggerHardware();
         updateUI();
