@@ -238,7 +238,7 @@ function updateImages() {
             state.ui.progressTimer = setTimeout(() => {
                 state.ui.isProgressAnimating = false;
                 dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
-            }, 600); 
+            }, 1000); 
         } else if (!state.ui.isProgressAnimating) {
             const pngSrc = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.png`;
             if (!dom.progressBarImage.src.endsWith(`${score}.png`)) {
