@@ -388,17 +388,17 @@ function renderButtons() {
             const y = radius * Math.sin(rad);
 
             const btn = document.createElement('div');
-            btn.className = 'round-button';
-            const size = 40; 
-            btn.style.width = `${size}px`;
-            btn.style.height = `${size}px`;
+            btn.className = 'round-button ' + (page.id === 'food' ? 'food-button' : 'dress-button');
+            const size = 15; 
+            btn.style.width = `${size}%`;
+            btn.style.aspectRatio = '1 / 1';
             
             // Position relative to Center + Layout Offset
             // Note: Since we use radius * sin(rad) where rad starts at 0 for right, 90 for down...
             // If we want the arc to bow UP, we need slightly different math, 
             // but standard "radius around a point" works well enough.
             
-            btn.style.left = `calc(50% + ${x}px - ${size/2}px)`;
+            btn.style.left = `calc(50% + ${x}px - ${size/2}%)`;
             // We shift the entire arc DOWN by the Layout Y %
             // And we subtract radius because usually (0,0) is center of circle, so we need to offset
             // so the TOP of the arc touches our desired Y? Or center?
@@ -407,7 +407,7 @@ function renderButtons() {
             
             // Actually, let's keep it simple. Center of arc = (50%, BUTTONS_Y).
             // Buttons are placed on the lower half.
-            btn.style.top = `calc(50% + ${layoutY}% + ${y}px - ${radius}px - ${size/2}px)`;
+            btn.style.top = `calc(50% + ${layoutY}% + ${y}px - ${radius}px - ${size/2}%)`;
             
             // Image
             const img = document.createElement('img');

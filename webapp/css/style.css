@@ -162,11 +162,16 @@ body {
     overflow: hidden;
 }
 
-.round-button img {
+.dress-button img {
     width: 200%;
     height: 200%;
     object-fit: contain;
-    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));
+}
+
+.food-button img {
+    width: 400%;
+    height: 400%;
+    object-fit: contain;
 }
 
 /* Ritual Button Specifics */
