@@ -369,23 +369,11 @@ function renderButtons() {
     if (content.type === 'curved-buttons') {
         
         const count = content.count;
-        const radius = CONFIG.UI.BUTTON_RADIUS; 
         
         content.ids.forEach((id, index) => {
             if (!shouldButtonBeVisible(page.id, id)) return;
 
-            // Simple distribution along an arc below the center
-            const span = 60; // +/- 60 degrees
-            const step = span * 2 / (count - 1 || 1);
-            const currentDeg = -span + (step * index); 
-            
-            const rad = (currentDeg + 90) * (Math.PI / 180);
-            
-            // Layout Y serves as anchor
-            const layoutY = CONFIG.LAYOUT.BUTTONS_Y; 
-            
-            const x = radius * Math.cos(rad);
-            const y = radius * Math.sin(rad);
+            const pos = getButtonArcPosition(index, count);
 
             const btn = document.createElement('div');
             btn.className = 'round-button ' + (page.id === 'food' ? 'food-button' : 'dress-button');
@@ -393,21 +381,8 @@ function renderButtons() {
             btn.style.width = `${size}%`;
             btn.style.aspectRatio = '1 / 1';
             
-            // Position relative to Center + Layout Offset
-            // Note: Since we use radius * sin(rad) where rad starts at 0 for right, 90 for down...
-            // If we want the arc to bow UP, we need slightly different math, 
-            // but standard "radius around a point" works well enough.
-            
-            btn.style.left = `calc(50% + ${x}px - ${size/2}%)`;
-            // We shift the entire arc DOWN by the Layout Y %
-            // And we subtract radius because usually (0,0) is center of circle, so we need to offset
-            // so the TOP of the arc touches our desired Y? Or center?
-            // Let's just place the center of the imaginary circle at (50%, LayoutY - Radius).
-            // Then the buttons at the bottom of the circle will be at LayoutY.
-            
-            // Actually, let's keep it simple. Center of arc = (50%, BUTTONS_Y).
-            // Buttons are placed on the lower half.
-            btn.style.top = `calc(50% + ${layoutY}% + ${y}px - ${radius}px - ${size/2}%)`;
+            btn.style.left = pos.left;
+            btn.style.top = pos.top;
             
             // Image
             const img = document.createElement('img');
@@ -423,6 +398,28 @@ function renderButtons() {
             dom.buttonsContainer.appendChild(btn);
         });
     }
+}
+
+function getButtonArcPosition(index, count) {
+    const radius = CONFIG.UI.BUTTON_RADIUS; 
+    const span = 60; // +/- 60 degrees
+    const step = span * 2 / (count - 1 || 1);
+    const currentDeg = -span + (step * index); 
+    
+    const rad = (currentDeg + 90) * (Math.PI / 180);
+    
+    // Layout Y serves as anchor
+    const layoutY = CONFIG.LAYOUT.BUTTONS_Y; 
+    
+    const x = radius * Math.cos(rad);
+    const y = radius * Math.sin(rad);
+
+    const size = 15; // match the size in renderButtons
+    
+    return {
+        left: `calc(50% + ${x}px - ${size/2}%)`,
+        top: `calc(50% + ${layoutY}% + ${y}px - ${radius}px - ${size/2}%)`
+    };
 }
 
 function updateContentZones() {
@@ -484,6 +481,91 @@ function renderZone(container, content) {
 /* ==========================================================================
    INTERACTIONS
    ========================================================================== */
+
+function startUndressSequence(e) {
+    const dressId = state.gameplay.chosenDressId;
+    if (!dressId) return;
+
+    // 1. Show Undress GIF -> Then Default Pet
+    // We can use the generic undress gif or a specific one if needed.
+    // Assuming generic for now as per plan.
+    state.ui.isGifPlaying = true;
+    dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_UNDRESS);
+    
+    // 2. Spawn the Button under cursor
+    const btn = document.createElement('div');
+    btn.className = 'round-button dress-button';
+    const size = 15; 
+    btn.style.width = `${size}%`;
+    btn.style.aspectRatio = '1 / 1';
+    
+    // Position at cursor
+    const initialLeft = e.clientX; 
+    const initialTop = e.clientY;
+    
+    document.body.appendChild(btn);
+    btn.style.position = 'fixed';
+    btn.style.left = (initialLeft) + 'px'; // Start top-left at cursor? Or center?
+    btn.style.top = (initialTop) + 'px';   // Let's just set it. 
+    
+    const img = document.createElement('img');
+    img.src = CONFIG.ASSETS.BUTTON_PREFIX.replace('{culture}', state.currentCulture) + `dress${dressId}.png`;
+    btn.appendChild(img);
+    
+    btn.style.zIndex = 1000;
+    btn.style.transform = 'translate(-50%, -50%)'; // Center on cursor
+    
+    state.ui.isAnyButtonDragging = true;
+    
+    // 3. Drag Logic
+    let startX = e.clientX;
+    let startY = e.clientY;
+    
+    const onMove = (mv) => {
+        mv.preventDefault();
+        const dx = mv.clientX - startX;
+        const dy = mv.clientY - startY;
+        btn.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    };
+    
+    const onEnd = (endEvent) => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onEnd);
+        state.ui.isAnyButtonDragging = false;
+        state.ui.isGifPlaying = false; // Stop forcing the GIF/Undressed state
+        
+        // Calculate Distance from Center
+        const btnRect = btn.getBoundingClientRect();
+        const btnCx = btnRect.left + btnRect.width / 2;
+        const btnCy = btnRect.top + btnRect.height / 2;
+        
+        const screenCx = window.innerWidth / 2;
+        const screenCy = window.innerHeight / 2;
+        
+        const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
+        const THRESHOLD = 80;
+        
+        if (dist > THRESHOLD) {
+            // SUCCESS: Removed dress
+            state.gameplay.chosenDressId = null;
+            state.progress.dress = false;
+            state.progress.ritual = false; // Reset ritual if undressed? Usually yes.
+            state.gameplay.currentPetImage = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
+            
+            setTimeout(() => {
+                btn.remove(); // Remove temp
+                updateUI();   // Re-render buttons (this will show the button in its arc)
+            }, 500);
+        } else {
+            // CANCEL: Dropped back on pet
+            btn.remove();
+            updateUI(); // Will restore dressed image
+        }
+    };
+    
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onEnd);
+}
 
 function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
     let startX, startY;
@@ -707,6 +789,25 @@ function setupEventListeners() {
     // 'S' Key for Shake Simulation
     window.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') wakeUp();
+    });
+
+    // Undress Interaction (Reverse Drag)
+    dom.ovalContainer.addEventListener('pointerdown', (e) => {
+        if (state.appPhase === 'gameplay' 
+            && state.currentPageIndex === 2 
+            && state.gameplay.chosenDressId 
+            && !state.ui.isAnyButtonDragging) {
+            
+            // Check distance from center
+            const screenCx = window.innerWidth / 2;
+            const screenCy = window.innerHeight / 2;
+            const dist = Math.hypot(e.clientX - screenCx, e.clientY - screenCy);
+            
+            if (dist < 80) { // Same threshold as drop
+                e.preventDefault();
+                startUndressSequence(e);
+            }
+        }
     });
 
     // Global Click State Machine
