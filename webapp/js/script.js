@@ -160,6 +160,7 @@ function resetGame(culture = null) {
     if (CONFIG.ASSETS.ARROW_LEFT) dom.navLeftImg.src = CONFIG.ASSETS.ARROW_LEFT;
     if (CONFIG.ASSETS.ARROW_RIGHT) dom.navRightImg.src = CONFIG.ASSETS.ARROW_RIGHT;
 
+    state.hasStarted = false;
     state.progress = { food: false, dress: false, ritual: false };
     state.gameplay = {
         foodSequence: [],
@@ -865,8 +866,14 @@ function setupEventListeners() {
 function wakeUp() {
     if (state.appPhase === 'black_screen') {
         dom.overlayBlack.style.display = 'none';
-        state.appPhase = 'waiting_for_click';
-        updateUI(); // Shows static loading image
+        
+        if (state.hasStarted) {
+            state.appPhase = 'gameplay';
+        } else {
+            state.appPhase = 'waiting_for_click';
+        }
+
+        updateUI(); 
         resetInactivityTimer();
     }
 }
@@ -888,6 +895,7 @@ async function handleStartupSequence() {
     await new Promise(r => setTimeout(r, 3000));
     
     state.appPhase = 'gameplay';
+    state.hasStarted = true;
     updateUI();
 }
 
