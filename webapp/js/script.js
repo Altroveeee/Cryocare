@@ -217,14 +217,14 @@ function evaluateTopButton() {
         if (!state.memoriesViewed.home) desiredType = 'memory';
         else desiredType = 'food';
     } else if (pageId === 'food') {
-        const isBaking = state.gameplay.bakingState !== 'none';
-        const isBaked = state.gameplay.bakingState === 'baked';
+        const isBeforeBaking = state.gameplay.bakingState === 'none';
+        const isAfterBaking = state.gameplay.bakingState === 'done' && state.gameplay.feedingState === 'done';
         
         if (!state.memoriesViewed.food) {
-            if (!isBaking || isBaked) desiredType = 'memory';
+            if (isBeforeBaking || isAfterBaking) desiredType = 'memory';
         }
         
-        if (!desiredType && isBaked && state.memoriesViewed.food) {
+        if (!desiredType && isAfterBaking && state.memoriesViewed.food) {
             desiredType = 'dress';
         }
     } else if (pageId === 'dress') {
@@ -396,7 +396,7 @@ function updateImages() {
 function updateControls() {
     // 1. Arrows
     // Hide during loading, baking, or feeding interaction
-    const isBaking = state.gameplay.bakingState !== 'none';
+    const isBaking = state.gameplay.bakingState !== 'none' && state.gameplay.bakingState !== 'done';
     const isFeeding = state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done';
     const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding;
 
@@ -926,7 +926,7 @@ function setupEventListeners() {
                 const s = state.gameplay;
                 
                 if (s.bakingState === 'baked') {
-                    s.bakingState = 'none';
+                    s.bakingState = 'done';
                     s.feedingState = 'ready_to_eat';
                     updateUI();
                 } else if (s.feedingState === 'ready_to_eat') {
