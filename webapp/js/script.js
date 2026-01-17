@@ -9,7 +9,8 @@ const PAGES = [
 ];
 
 const state = {
-    appPhase: 'black_screen', // black_screen -> waiting_for_click -> sequence_running -> gameplay
+    appPhase: 'black_screen', // black_screen -> waiting_for_click -> sequence_running -> gameplay -> ending_sequence
+    endingStep: null, // button_wait -> zoomed_sequence -> goodbye
     loadingStep: null, 
     hasStarted: false,
     currentCulture: 'kurd',
@@ -134,6 +135,7 @@ function collectCultureAssets(culture) {
     // Pet
     push(CONFIG.ASSETS.PET_BAKING);
     push(CONFIG.ASSETS.PET_RITUAL);
+    push(CONFIG.ASSETS.BYE_BYE_ANIMATION);
     for(let i=1; i<=3; i++) push(CONFIG.ASSETS.PET_DRESS.replace('{id}', i));
     push(CONFIG.ASSETS.BAKED_FOOD);
 
@@ -422,7 +424,7 @@ function updateControls() {
     // Hide during loading, baking, or feeding interaction
     const isBaking = state.gameplay.bakingState !== 'none' && state.gameplay.bakingState !== 'done';
     const isFeeding = state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done';
-    const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding;
+    const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding || state.appPhase === 'ending_sequence';
 
     if (hideArrows) {
         dom.navLeft.style.display = 'none';
@@ -531,6 +533,21 @@ function updateContentZones() {
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
     else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME') };
     
+    // Ending Sequence Logic
+    if (state.appPhase === 'ending_sequence') {
+        if (state.endingStep === 'button_wait') {
+            topContent = { 
+                type: 'button', 
+                image: CONFIG.ASSETS.END_BUTTON, 
+                action: () => runFinalZoomSequence(),
+                isEndButton: true 
+            };
+        } else if (state.endingStep === 'goodbye') {
+            topContent = { type: 'text', value: getText('END_MSG_FINAL_TOP') };
+            botContent = { type: 'text', value: getText('END_MSG_FINAL_BOT') };
+        }
+    }
+    
     // Generic Top Button Logic
     if (state.ui.topButton.visible && state.ui.topButton.activeType) {
         const type = state.ui.topButton.activeType;
@@ -589,7 +606,7 @@ function renderZone(container, content) {
         container.appendChild(s);
     } else if (content.type === 'button') {
         const b = document.createElement('div');
-        b.className = 'ritual-btn';
+        b.className = content.isEndButton ? 'end-button' : 'ritual-btn';
         const i = document.createElement('img');
         i.src = content.image;
         b.appendChild(i);
@@ -819,7 +836,7 @@ function triggerRitual() {
     updateUI();
     setTimeout(() => {
         state.ui.isGifPlaying = false;
-        updateUI();
+        startEndingPhase();
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -832,6 +849,41 @@ function triggerMemory() {
     setTimeout(() => {
         dom.memoryContentImage.src = `${CONFIG.ASSETS.MEMORY_IMAGE}`.replace('{culture}', state.currentCulture).replace('{id}', memoryIndex);
     }, 500); // GIF duration is 0.5s
+}
+
+function startEndingPhase() {
+    state.appPhase = 'ending_sequence';
+    state.endingStep = 'button_wait';
+    updateUI();
+}
+
+async function runFinalZoomSequence() {
+    state.endingStep = 'zoomed_sequence';
+    dom.petImage.classList.add('pet-zoomed');
+    updateUI();
+
+    // 1. Message 1
+    state.ui.tempContent.top = { type: 'text', value: getText('END_MSG_1') };
+    updateUI();
+    await new Promise(r => setTimeout(r, 5000));
+
+    // 2. Message 2
+    state.ui.tempContent.top = { type: 'text', value: getText('END_MSG_2') };
+    updateUI();
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Clear temp content
+    state.ui.tempContent.top = null;
+
+    // 3. Goodbye
+    dom.petImage.classList.remove('pet-zoomed');
+    state.endingStep = 'goodbye';
+    
+    // Play Bye Bye GIF
+    state.ui.isGifPlaying = true;
+    dom.petImage.src = getAssetPath(CONFIG.ASSETS.BYE_BYE_ANIMATION);
+    
+    updateUI();
 }
 
 /* ==========================================================================

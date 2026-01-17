@@ -32,7 +32,9 @@
         "BUTTON_PREFIX": "assets/{culture}/buttons/",
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
         "LOADING_ANIMATION": "assets/defaults/loading/wave.gif",
-        "BAKED_FOOD": "assets/{culture}/pet/baked_food.png"
+        "BAKED_FOOD": "assets/{culture}/pet/baked_food.png",
+        "END_BUTTON": "assets/defaults/end.png",
+        "BYE_BYE_ANIMATION": "assets/{culture}/pet/bye_bye.gif"
     },
     "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
@@ -47,7 +49,11 @@
         "INFO_FOOD": "Select the ingredients in the correct order",
         "INFO_DRESS": "Choose the proper dress for the ritual",
         "FOOD_NAME": "{foodName}",
-        "FOOD_DESCRIPTION": "{foodDescription}"
+        "FOOD_DESCRIPTION": "{foodDescription}",
+        "END_MSG_1": "{endMsg1}",
+        "END_MSG_2": "{endMsg2}",
+        "END_MSG_FINAL_TOP": "Thank you for taking care of me!",
+        "END_MSG_FINAL_BOT": "Come back tomorrow!"
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,
