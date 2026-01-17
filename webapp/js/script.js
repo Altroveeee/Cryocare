@@ -1018,11 +1018,20 @@ async function handleStartupSequence() {
     state.loadingStep = 'static';
     // Transition: Fade out static image? 
     // Logic: 'sequence_running' + 'static' shows LOADING_STATIC.
-    // We want to move to 'welcome' (Animation)
     
-    // Immediate or slight delay?
+    updateUI();
+    // Allow render
+    await new Promise(r => setTimeout(r, 100));
+    
+    // Fade out static
+    dom.petImage.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 500));
+    
+    // Switch to Welcome (Animation) and Fade In
     state.loadingStep = 'welcome';
     updateUI();
+    dom.petImage.style.opacity = '1';
+    
     await new Promise(r => setTimeout(r, 3000));
     
     state.loadingStep = 'instructions';
