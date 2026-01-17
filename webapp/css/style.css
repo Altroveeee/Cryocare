@@ -249,15 +249,23 @@ body {
     height: 100%;
     background-color: white; /* Full opaque white background */
     z-index: 250; /* Above info overlay */
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+}
+
+#memory-overlay.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
 #memory-content-image {
-    width: 100%;
-    height: 100%;
+    width: 88%;
+    height: 88%;
     object-fit: contain; /* Ensure memory image fits within oval */
 }
 

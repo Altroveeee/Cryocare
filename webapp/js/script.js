@@ -796,12 +796,12 @@ function triggerRitual() {
 function triggerMemory() {
     const memoryIndex = state.currentPageIndex + 1; // 1, 2, 3
     
-    dom.overlayMemory.style.display = 'flex';
+    dom.overlayMemory.classList.add('visible');
     dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
     
     setTimeout(() => {
         dom.memoryContentImage.src = `${CONFIG.ASSETS.MEMORY_IMAGE}`.replace('{culture}', state.currentCulture).replace('{id}', memoryIndex);
-    }, 1000); // GIF duration is 1s
+    }, 500); // GIF duration is 0.5s
 }
 
 /* ==========================================================================
@@ -926,8 +926,8 @@ function setupEventListeners() {
         } else if (state.appPhase === 'gameplay') {
             
             // 1. If Memory Overlay is open, close it
-            if (dom.overlayMemory.style.display === 'flex') {
-                dom.overlayMemory.style.display = 'none';
+            if (dom.overlayMemory.classList.contains('visible')) {
+                dom.overlayMemory.classList.remove('visible');
                 
                 // Mark current memory as viewed
                 const pageId = PAGES[state.currentPageIndex].id;
