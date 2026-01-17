@@ -177,8 +177,8 @@ body {
 
 /* Ritual Button Specifics */
 .ritual-btn {
-    width: 80px;
-    height: 80px;
+    width: 150px;
+    height: 150px;
     background: transparent; 
     border-radius: 50%;
     display: flex;
@@ -190,8 +190,8 @@ body {
     transform: translateY(-7vh);
 }
 .ritual-btn img {
-    width: 60%;
-    height: 60%;
+    width: 300%;
+    height: 300%;
     object-fit: contain;
     filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));
 }
@@ -239,6 +239,26 @@ body {
     text-align: center;
     font-size: 2rem;
     color: #333;
+}
+
+#memory-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white; /* Full opaque white background */
+    z-index: 250; /* Above info overlay */
+    display: none;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+#memory-content-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensure memory image fits within oval */
 }
 
 /* === ANIMATIONS === */

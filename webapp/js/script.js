@@ -15,6 +15,7 @@ const state = {
     currentCulture: 'kurd',
     currentPageIndex: 0,
     progress: { food: false, dress: false, ritual: false },
+    memoriesViewed: { home: false, food: false, dress: false },
     gameplay: {
         foodSequence: [],
         chosenDressId: null,
@@ -31,7 +32,12 @@ const state = {
         isProgressAnimating: false,
         progressTimer: null,
         tempContent: { top: null, bot: null },
-        tempTimers: { top: null, bot: null }
+        tempTimers: { top: null, bot: null },
+        topButton: {
+            activeType: null, // 'food', 'dress', 'ritual', 'memory'
+            visible: false,
+            timer: null
+        }
     }
 };
 
@@ -103,6 +109,8 @@ function cacheDomElements() {
     dom.overlayBlack = document.getElementById('black-screen-overlay');
     dom.overlayInfo = document.getElementById('info-overlay');
     dom.infoContent = document.getElementById('info-content');
+    dom.overlayMemory = document.getElementById('memory-overlay');
+    dom.memoryContentImage = document.getElementById('memory-content-image');
 }
 
 function preloadImages(urls) {
@@ -162,6 +170,7 @@ function resetGame(culture = null) {
 
     state.hasStarted = false;
     state.progress = { food: false, dress: false, ritual: false };
+    state.memoriesViewed = { home: false, food: false, dress: false };
     state.gameplay = {
         foodSequence: [],
         chosenDressId: null,
@@ -178,6 +187,10 @@ function resetGame(culture = null) {
     if (state.ui.progressTimer) clearTimeout(state.ui.progressTimer);
     state.ui.tempContent = { top: null, bot: null };
 
+    // Reset Top Button
+    if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+    state.ui.topButton = { activeType: null, visible: false, timer: null };
+
     resetInactivityTimer();
 }
 
@@ -186,10 +199,63 @@ function resetGame(culture = null) {
    ========================================================================== */
 
 function updateUI() {
+    evaluateTopButton();
     applyLayoutPositions();
     updateImages();
     updateControls();
     updateContentZones();
+}
+
+function evaluateTopButton() {
+    if (state.appPhase !== 'gameplay') return;
+
+    let desiredType = null;
+    const pageId = PAGES[state.currentPageIndex].id;
+
+    // Logic Priorities
+    if (pageId === 'home') {
+        if (!state.memoriesViewed.home) desiredType = 'memory';
+        else desiredType = 'food';
+    } else if (pageId === 'food') {
+        const isBaking = state.gameplay.bakingState !== 'none';
+        const isBaked = state.gameplay.bakingState === 'baked';
+        
+        if (!state.memoriesViewed.food) {
+            if (!isBaking || isBaked) desiredType = 'memory';
+        }
+        
+        if (!desiredType && isBaked && state.memoriesViewed.food) {
+            desiredType = 'dress';
+        }
+    } else if (pageId === 'dress') {
+        const isCorrectDress = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
+        const ritualReady = isCorrectDress && !state.progress.ritual && !state.ui.isGifPlaying;
+
+        if (ritualReady) desiredType = 'ritual';
+        else if (!state.memoriesViewed.dress) desiredType = 'memory';
+    }
+
+    // Handle State Changes
+    if (state.ui.topButton.activeType !== desiredType) {
+        // Clear existing timer if type changes
+        if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+        
+        state.ui.topButton.activeType = desiredType;
+        state.ui.topButton.visible = false;
+
+        if (desiredType) {
+            if (desiredType === 'ritual') {
+                state.ui.topButton.visible = true; // Immediate
+            } else {
+                // Random Delay 1-3s
+                const delay = 1000 + Math.random() * 2000;
+                state.ui.topButton.timer = setTimeout(() => {
+                    state.ui.topButton.visible = true;
+                    updateUI();
+                }, delay);
+            }
+        }
+    }
 }
 
 function applyLayoutPositions() {
@@ -435,17 +501,27 @@ function updateContentZones() {
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
     else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME') };
     
-    // Ritual Button Logic
-    if (state.currentPageIndex === 2 
-        && state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID 
-        && !state.progress.ritual
-        && !state.ui.isGifPlaying) {
-        
-        topContent = { 
-            type: 'button', 
-            image: CONFIG.ASSETS.RITUAL_BUTTON_ICON,
-            action: () => triggerRitual()
-        };
+    // Generic Top Button Logic
+    if (state.ui.topButton.visible && state.ui.topButton.activeType) {
+        const type = state.ui.topButton.activeType;
+        let action = () => {};
+        let image = "";
+
+        if (type === 'food') {
+            image = CONFIG.ASSETS.BUTTON_ICON_FOOD;
+            action = () => { state.currentPageIndex = 1; updateUI(); };
+        } else if (type === 'dress') {
+            image = CONFIG.ASSETS.BUTTON_ICON_DRESS;
+            action = () => { state.currentPageIndex = 2; updateUI(); };
+        } else if (type === 'ritual') {
+            image = CONFIG.ASSETS.BUTTON_ICON_RITUAL;
+            action = () => triggerRitual();
+        } else if (type === 'memory') {
+            image = CONFIG.ASSETS.BUTTON_ICON_MEMORY;
+            action = () => triggerMemory();
+        }
+
+        topContent = { type: 'button', image, action };
     }
 
     if (state.ui.tempContent.bot) botContent = state.ui.tempContent.bot;
@@ -472,6 +548,7 @@ function renderZone(container, content) {
         i.src = content.image;
         b.appendChild(i);
         b.onclick = (e) => { 
+            e.stopPropagation(); // Prevent global body click
             animateButtonPress(b); 
             content.action(); 
         };
@@ -700,6 +777,17 @@ function triggerRitual() {
     }, CONFIG.GIF_DURATION_MS);
 }
 
+function triggerMemory() {
+    const memoryIndex = state.currentPageIndex + 1; // 1, 2, 3
+    
+    dom.overlayMemory.style.display = 'flex';
+    dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
+    
+    setTimeout(() => {
+        dom.memoryContentImage.src = `${CONFIG.ASSETS.MEMORY_IMAGE}`.replace('{culture}', state.currentCulture).replace('{id}', memoryIndex);
+    }, 1000); // GIF duration is 1s
+}
+
 /* ==========================================================================
    HELPERS & UTILS
    ========================================================================== */
@@ -816,41 +904,42 @@ function setupEventListeners() {
         resetInactivityTimer();
 
         if (state.appPhase === 'black_screen') {
-            // Wake up usually handled by Shake/S, but clicking might also wake from sleep timeout?
-            // Requirement 3: "click... only when screen is not black" for startup sequence.
-            // But Requirement 2 says Shake/S wakes it up.
-            // Requirement 11/12/13: Clicks drive eating sequence.
+            // Wake up usually handled by Shake/S
         } else if (state.appPhase === 'waiting_for_click') {
             handleStartupSequence();
         } else if (state.appPhase === 'gameplay') {
             
-            // Food/Feeding Logic
+            // 1. If Memory Overlay is open, close it
+            if (dom.overlayMemory.style.display === 'flex') {
+                dom.overlayMemory.style.display = 'none';
+                
+                // Mark current memory as viewed
+                const pageId = PAGES[state.currentPageIndex].id;
+                state.memoriesViewed[pageId] = true;
+                
+                updateUI();
+                return;
+            }
+
+            // 2. Food interaction logic
             if (state.currentPageIndex === 1) { // Food Page
                 const s = state.gameplay;
                 
                 if (s.bakingState === 'baked') {
-                    // 11. Click on baked -> Ready to eat (Full bowl)
                     s.bakingState = 'none';
                     s.feedingState = 'ready_to_eat';
                     updateUI();
                 } else if (s.feedingState === 'ready_to_eat') {
-                    // 12. Click -> Eat Anim + Progress
                     s.feedingState = 'eating';
                     state.progress.food = true;
                     updateUI();
                 } else if (s.feedingState === 'eating') {
-                    // 13. Click -> Share Anim
                     s.feedingState = 'sharing';
                     updateUI();
-                    
-                    // 14. After share -> Done (Arrows appear). 
-                    // Let's use a timeout or next click? Requirement 14: "after the eat and share animation arrows appears"
-                    // Animation usually takes ~1-2s? Let's use a timeout for flow or require another click.
-                    // Given the flow, auto-transition to done after animation is safer so user sees arrows.
                     setTimeout(() => {
                         s.feedingState = 'done';
                         updateUI();
-                    }, 1500 + CONFIG.GIF_DURATION_MS); // After share animation
+                    }, 1500 + CONFIG.GIF_DURATION_MS); 
                 }
             }
         }
