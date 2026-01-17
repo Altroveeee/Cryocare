@@ -15,6 +15,7 @@ const state = {
     currentCulture: 'kurd',
     currentPageIndex: 0,
     progress: { food: false, dress: false, ritual: false },
+    unlocked: { food: false, dress: false },
     memoriesViewed: { home: false, food: false, dress: false },
     gameplay: {
         foodSequence: [],
@@ -170,6 +171,7 @@ function resetGame(culture = null) {
 
     state.hasStarted = false;
     state.progress = { food: false, dress: false, ritual: false };
+    state.unlocked = { food: false, dress: false };
     state.memoriesViewed = { home: false, food: false, dress: false };
     state.gameplay = {
         foodSequence: [],
@@ -405,7 +407,13 @@ function updateControls() {
         dom.navRight.style.display = 'none';
     } else {
         dom.navLeft.style.display = state.currentPageIndex > 0 ? 'block' : 'none';
-        dom.navRight.style.display = state.currentPageIndex < PAGES.length - 1 ? 'block' : 'none';
+        
+        // Lock Logic: Show Right Arrow only if next page is unlocked
+        let canGoRight = false;
+        if (state.currentPageIndex === 0 && state.unlocked.food) canGoRight = true;
+        else if (state.currentPageIndex === 1 && state.unlocked.dress) canGoRight = true;
+        
+        dom.navRight.style.display = canGoRight ? 'block' : 'none';
     }
 
     // 2. Info Button
@@ -509,10 +517,18 @@ function updateContentZones() {
 
         if (type === 'food') {
             image = CONFIG.ASSETS.BUTTON_ICON_FOOD;
-            action = () => { state.currentPageIndex = 1; updateUI(); };
+            action = () => { 
+                state.unlocked.food = true;
+                state.currentPageIndex = 1; 
+                updateUI(); 
+            };
         } else if (type === 'dress') {
             image = CONFIG.ASSETS.BUTTON_ICON_DRESS;
-            action = () => { state.currentPageIndex = 2; updateUI(); };
+            action = () => { 
+                state.unlocked.dress = true;
+                state.currentPageIndex = 2; 
+                updateUI(); 
+            };
         } else if (type === 'ritual') {
             image = CONFIG.ASSETS.BUTTON_ICON_RITUAL;
             action = () => triggerRitual();
