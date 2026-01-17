@@ -214,27 +214,49 @@ function evaluateTopButton() {
     let desiredType = null;
     const pageId = PAGES[state.currentPageIndex].id;
 
-    // Logic Priorities
+    // 1. Determine Local Memory Availability
+    let showMemory = false;
     if (pageId === 'home') {
-        if (!state.memoriesViewed.home) desiredType = 'memory';
-        else desiredType = 'food';
+        if (!state.memoriesViewed.home) showMemory = true;
     } else if (pageId === 'food') {
+        // Only show memory if idle (before baking) or fully done
         const isBeforeBaking = state.gameplay.bakingState === 'none';
         const isAfterBaking = state.gameplay.bakingState === 'done' && state.gameplay.feedingState === 'done';
-        
-        if (!state.memoriesViewed.food) {
-            if (isBeforeBaking || isAfterBaking) desiredType = 'memory';
-        }
-        
-        if (!desiredType && isAfterBaking && state.memoriesViewed.food) {
-            desiredType = 'dress';
+        if (!state.memoriesViewed.food && (isBeforeBaking || isAfterBaking)) {
+            showMemory = true;
         }
     } else if (pageId === 'dress') {
-        const isCorrectDress = state.gameplay.chosenDressId === CONFIG.RULES.CORRECT_DRESS_ID;
-        const ritualReady = isCorrectDress && !state.progress.ritual && !state.ui.isGifPlaying;
+        if (!state.memoriesViewed.dress) showMemory = true;
+    }
 
-        if (ritualReady) desiredType = 'ritual';
-        else if (!state.memoriesViewed.dress) desiredType = 'memory';
+    // 2. Determine Global Next Step
+    // Logic: Food -> Dress -> Ritual
+    let globalNextStep = null;
+    if (!state.progress.food) globalNextStep = 'food';
+    else if (!state.progress.dress) globalNextStep = 'dress';
+    else if (!state.progress.ritual) globalNextStep = 'ritual';
+
+    // 3. Decision Logic
+    if (showMemory) {
+        desiredType = 'memory';
+    } else if (globalNextStep) {
+        const isBeforeBaking = state.gameplay.bakingState === 'none';
+        const isAfterBaking = state.gameplay.bakingState === 'done' && state.gameplay.feedingState === 'done';
+        // Ensure nothing is rendered during baking or feeding interaction
+        if (isBeforeBaking || isAfterBaking) {
+            // If the next step is Ritual, show it everywhere (logic in updateContentZones handles navigation)
+            if (globalNextStep === 'ritual') {
+                desiredType = 'ritual';
+            } 
+            // If next step is Food, show button if we are NOT on food page
+            else if (globalNextStep === 'food' && pageId !== 'food') {
+                desiredType = 'food';
+            }
+            // If next step is Dress, show button if we are NOT on dress page
+            else if (globalNextStep === 'dress' && pageId !== 'dress') {
+                desiredType = 'dress';
+            }
+        }
     }
 
     // Handle State Changes
@@ -531,7 +553,15 @@ function updateContentZones() {
             };
         } else if (type === 'ritual') {
             image = CONFIG.ASSETS.BUTTON_ICON_RITUAL;
-            action = () => triggerRitual();
+            action = () => {
+                if (state.currentPageIndex !== 2) {
+                    state.currentPageIndex = 2;
+                    updateUI();
+                    triggerRitual();
+                } else {
+                    triggerRitual();
+                }
+            };
         } else if (type === 'memory') {
             image = CONFIG.ASSETS.BUTTON_ICON_MEMORY;
             action = () => triggerMemory();
