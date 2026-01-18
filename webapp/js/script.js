@@ -1,3 +1,34 @@
+// 1. Import Firebase from the CDN
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+// 2. Paste your specific configuration here
+const firebaseConfig = {
+  apiKey: "AIzaSyDm_V5mxoagUzTBZPc7COPWz_iw_X_ADdM",
+  authDomain: "cryocare-46397.firebaseapp.com",
+  databaseURL: "https://cryocare-46397-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "cryocare-46397",
+  storageBucket: "cryocare-46397.firebasestorage.app",
+  messagingSenderId: "245430472807",
+  appId: "1:245430472807:web:4b778c9201066ed69984c2"
+};
+
+// 3. Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 4. Listen for changes in the "culture" node
+const cultureRef = ref(db, 'device/culture');
+
+onValue(cultureRef, (snapshot) => {
+  const selectedCulture = snapshot.val();
+  console.log("Database updated! New culture:", selectedCulture);
+
+  if (selectedCulture) {
+    init(selectedCulture);
+  }
+});
+
 // CONFIG & STATE
 let CONFIG = {};
 let CULTURE_CONFIGS = {};
@@ -52,7 +83,7 @@ CLICK_SOUND.volume = 0.5;
    INITIALIZATION
    ========================================================================== */
 
-async function init() {
+async function init(selectedCulture) {
     // 1. Load Config
     await loadConfiguration();
     
@@ -66,7 +97,7 @@ async function init() {
     ]);
 
     // 4. Reset Game (Selects culture)
-    resetGame();
+    resetGame(selectedCulture);
     
     // 5. Preload Culture Specifics
     const cultureAssets = collectCultureAssets(state.currentCulture);
