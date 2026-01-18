@@ -40,6 +40,8 @@ const PAGES = [
 ];
 
 const state = {
+    sessionToken: 0,
+    timers: {},
     appPhase: 'black_screen', // black_screen -> waiting_for_click -> sequence_running -> gameplay -> ending_sequence
     endingStep: null, // button_wait -> zoomed_sequence -> goodbye
     loadingStep: null, 
@@ -188,6 +190,11 @@ function collectCultureAssets(culture) {
    ========================================================================== */
 
 function resetGame(culture = null) {
+    // 1. Reset System & UI
+    resetTimers();
+    resetVisuals();
+    state.sessionToken++;
+
     if (culture && CONFIG.CULTURES.includes(culture)) {
         state.currentCulture = culture;
     } else {
@@ -202,6 +209,9 @@ function resetGame(culture = null) {
     if (CONFIG.ASSETS.ARROW_LEFT) dom.navLeftImg.src = CONFIG.ASSETS.ARROW_LEFT;
     if (CONFIG.ASSETS.ARROW_RIGHT) dom.navRightImg.src = CONFIG.ASSETS.ARROW_RIGHT;
 
+    state.appPhase = 'black_screen'; 
+    state.endingStep = null;
+    state.loadingStep = null;
     state.hasStarted = false;
     state.progress = { food: false, dress: false, ritual: false };
     state.unlocked = { food: false, dress: false };
@@ -219,15 +229,47 @@ function resetGame(culture = null) {
     state.ui.isGifPlaying = false;
     state.ui.lastProgressScore = 0;
     state.ui.isProgressAnimating = false;
-    if (state.ui.progressTimer) clearTimeout(state.ui.progressTimer);
-    state.ui.tempContent = { top: null, bot: null };
-
-    // Reset Top Button
-    if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+    
+    // Top button timer cleared in resetTimers, just reset state object
     state.ui.topButton = { activeType: null, visible: false, timer: null };
 
     resetInactivityTimer();
 }
+
+function resetTimers() {
+    // Clear generic timers
+    if (state.ui.inactivityTimer) clearTimeout(state.ui.inactivityTimer);
+    if (state.ui.progressTimer) clearTimeout(state.ui.progressTimer);
+    if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+    
+    // Clear map timers
+    if (state.ui.tempTimers) {
+        Object.values(state.ui.tempTimers).forEach(t => { if(t) clearTimeout(t); });
+    }
+    state.ui.tempTimers = { top: null, bot: null };
+
+    // Clear specific logic timers
+    if (state.timers.baking) clearTimeout(state.timers.baking);
+    if (state.timers.ritual) clearTimeout(state.timers.ritual);
+    if (state.timers.memory) clearTimeout(state.timers.memory);
+    state.timers = {};
+}
+
+function resetVisuals() {
+    // Hide Overlays
+    if (dom.overlayInfo) dom.overlayInfo.style.display = 'none';
+    if (dom.overlayMemory) dom.overlayMemory.classList.remove('visible');
+    
+    // Reset Pet visual state
+    if (dom.petImage) {
+        dom.petImage.classList.remove('pet-zoomed');
+        dom.petImage.style.opacity = '1'; // Ensure visible if it was fading
+    }
+    
+    // Reset Bowl
+    if (dom.bowlImage) dom.bowlImage.className = 'game-layer prop';
+}
+
 
 /* ==========================================================================
    RENDERING & LAYOUT
@@ -853,7 +895,7 @@ function startBaking() {
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_BAKING);
     
-    setTimeout(() => {
+    state.timers.baking = setTimeout(() => {
         state.ui.isGifPlaying = false;
         state.gameplay.bakingState = 'baked';
         updateUI();
@@ -865,7 +907,7 @@ function triggerRitual() {
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_RITUAL);
     updateUI();
-    setTimeout(() => {
+    state.timers.ritual = setTimeout(() => {
         state.ui.isGifPlaying = false;
         startEndingPhase();
     }, CONFIG.GIF_DURATION_MS);
@@ -877,7 +919,7 @@ function triggerMemory() {
     dom.overlayMemory.classList.add('visible');
     dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
     
-    setTimeout(() => {
+    state.timers.memory = setTimeout(() => {
         dom.memoryContentImage.src = `${CONFIG.ASSETS.MEMORY_IMAGE}`.replace('{culture}', state.currentCulture).replace('{id}', memoryIndex);
     }, 500); // GIF duration is 0.5s
 }
@@ -889,6 +931,7 @@ function startEndingPhase() {
 }
 
 async function runFinalZoomSequence() {
+    const myToken = state.sessionToken;
     state.endingStep = 'zoomed_sequence';
     dom.petImage.classList.add('pet-zoomed');
     updateUI();
@@ -897,11 +940,13 @@ async function runFinalZoomSequence() {
     state.ui.tempContent.top = { type: 'text', value: getText('END_MSG_1') };
     updateUI();
     await new Promise(r => setTimeout(r, 5000));
+    if (state.sessionToken !== myToken) return;
 
     // 2. Message 2
     state.ui.tempContent.top = { type: 'text', value: getText('END_MSG_2') };
     updateUI();
     await new Promise(r => setTimeout(r, 5000));
+    if (state.sessionToken !== myToken) return;
 
     // Clear temp content
     state.ui.tempContent.top = null;
@@ -980,6 +1025,8 @@ function resetInactivityTimer() {
 }
 
 function setupEventListeners() {
+    if (state.areListenersSetup) return;
+
     // Navigation
     const nav = (dir) => {
         if(dir==='prev' && state.currentPageIndex > 0) state.currentPageIndex--;
@@ -1097,6 +1144,7 @@ function wakeUp() {
 }
 
 async function handleStartupSequence() {
+    const myToken = state.sessionToken;
     state.appPhase = 'sequence_running';
     state.loadingStep = 'static';
     // Transition: Fade out static image? 
@@ -1105,10 +1153,12 @@ async function handleStartupSequence() {
     updateUI();
     // Allow render
     await new Promise(r => setTimeout(r, 100));
+    if (state.sessionToken !== myToken) return;
     
     // Fade out static
     dom.petImage.style.opacity = '0';
     await new Promise(r => setTimeout(r, 500));
+    if (state.sessionToken !== myToken) return;
     
     // Switch to Welcome (Animation) and Fade In
     state.loadingStep = 'welcome';
@@ -1116,15 +1166,14 @@ async function handleStartupSequence() {
     dom.petImage.style.opacity = '1';
     
     await new Promise(r => setTimeout(r, 3000));
+    if (state.sessionToken !== myToken) return;
     
     state.loadingStep = 'instructions';
     updateUI();
     await new Promise(r => setTimeout(r, 3000));
+    if (state.sessionToken !== myToken) return;
     
     state.appPhase = 'gameplay';
     state.hasStarted = true;
     updateUI();
 }
-
-document.addEventListener('DOMContentLoaded', init);
-
