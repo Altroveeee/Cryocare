@@ -1,29 +1,30 @@
 #include <WiFi.h>
 // #include <WebServer.h>
 #include <ESP32Servo.h>
-#include <Firebase_ESP_Client.h>
-
-// Provide the token generation process info.
-#include "addons/TokenHelper.h"
-// Provide the RTDB payload printing info and other helper functions.
-#include "addons/RTDBHelper.h"
+#include <FirebaseClient.h>
 
 Servo servo;
-WebServer server(80);
+// WebServer server(80);
 
 // ---- CONFIGURA LA TUA WIFI ----
 const char* ssid = "TIM-29033219";
 const char* password = "Jm5OgoQustxqNZ7N75FhZ6i0";
 
-const char* firebase_api_key = "AIzaSyDm_V5mxoagUzTBZPc7COPWz_iw_X_ADdM";
-const char* firebase_database_url = "https://cryocare-8f6e4-default-rtdb.europe-west1.firebasedatabase.app/";
+#define API_KEY "AIzaSyDm_V5mxoagUzTBZPc7COPWz_iw_X_ADdM"
+#define USER_EMAIL "crmgrl57@gmail.com"
+#define USER_PASSWORD "crmgrl05072001"
+#define DATABASE_URL "https://cryocare-8f6e4-default-rtdb.europe-west1.firebasedatabase.app/"
 
-// Define Firebase Data objects
-FirebaseData fbdo;
-FirebaseAuth auth;
-FirebaseConfig config;
+SSL_CLIENT ssl_client;
 
-bool signupOK = false;
+using AsyncClient = AsyncClientClass;
+AsyncClient aClient(ssl_client);
+
+UserAuth user_auth(API_KEY, USER_EMAIL, USER_PASSWORD, 3000 /* expire period in seconds (<3600) */);
+FirebaseApp app;
+RealtimeDatabase Database;
+AsyncResult databaseResult;
+
 String triggerPath = "/device/trigger";
 
 // Static IP configuration
@@ -73,59 +74,38 @@ void setup() {
   // server.on("/servo", handleServo);
 
   // server.begin();
+  Firebase.printf("Firebase Client v%s\n", FIREBASE_CLIENT_VERSION);
 
-  // Assign the api key (required)
-  config.api_key = API_KEY;
-  // Assign the RTDB URL (required)
-  config.database_url = DATABASE_URL;
+  set_ssl_client_insecure_and_buffer(ssl_client);
 
-  // Sign up anonymously
-  if (Firebase.signUp(&config, &auth, "", "")) {
-    Serial.println("ok");
-    signupOK = true;
-  } else {
-    Serial.printf("%s\n", config.signer.signupError.message.c_str());
-  }
+  Serial.println("Initializing app...");
+  initializeApp(aClient, app, getAuth(user_auth), auth_debug_print, "🔐 authTask");
 
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
-  
-  // Set the trigger to false initially to be safe
-  if (signupOK) {
-     Firebase.RTDB.setBool(&fbdo, triggerPath, false);
-  }
+  // Or intialize the app and wait.
+  // initializeApp(aClient, app, getAuth(user_auth), 120 * 1000, auth_debug_print);
+
+  app.getApp<RealtimeDatabase>(Database);
+
+  Database.url(DATABASE_URL);
 }
 
 void loop() {
   // server.handleClient();
-
-  if (Firebase.ready() && signupOK) {
+  app.loop();
+  if (app.ready()) {
     
     // 1. READ the Trigger Status
-    if (Firebase.RTDB.getBool(&fbdo, triggerPath)) {
-      if (fbdo.dataType() == "boolean") {
-        bool shouldRun = fbdo.boolData();
+    bool res = Database.get<bool>(aClient, triggerPath);
+    if (res) {
+      Serial.println("Trigger received! Starting Task...");
 
-        // 2. IF TRIGGER IS TRUE -> DO THE TASK
-        if (shouldRun == true) {
-          Serial.println("Trigger received! Starting Task...");
+      handleServo();
 
-          handleServo();
+      Serial.println("Task Finished. Resetting Trigger.");
 
-          Serial.println("Task Finished. Resetting Trigger.");
-
-          // 3. RESET TRIGGER TO FALSE (The Handshake)
-          // This stops it from running again until the webapp is clicked again
-          if (Firebase.RTDB.setBool(&fbdo, triggerPath, false)) {
-            Serial.println("System Ready for next command.");
-          } else {
-            Serial.println("Failed to reset trigger (Check internet connection)");
-          }
-        }
-      }
-    } else {
-      // Failed to get data (Print error reason)
-      Serial.println(fbdo.errorReason());
+      // 3. RESET TRIGGER TO FALSE (The Handshake)
+      // This stops it from running again until the webapp is clicked again
+      Database.set<bool>(aClient, triggerPath, false, processData, "setBoolTask");
     }
   }
   
