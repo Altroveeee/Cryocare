@@ -111,6 +111,7 @@ async function init(selectedCulture) {
     // Initial State: Black Screen
     dom.overlayBlack.style.display = 'block';
     updateUI();
+    wakeUp();
 }
 
 async function loadConfiguration() {
@@ -1014,14 +1015,14 @@ function triggerHardware() {
 }
 
 function resetInactivityTimer() {
-    if (state.ui.inactivityTimer) clearTimeout(state.ui.inactivityTimer);
-    state.ui.inactivityTimer = setTimeout(() => {
-        // Only show black screen overlay if we are already in gameplay
-        if (state.appPhase === 'gameplay') {
-            dom.overlayBlack.style.display = 'block';
-            state.appPhase = 'black_screen'; // Effectively go back to sleep
-        }
-    }, CONFIG.TIMEOUT_MS);
+    // if (state.ui.inactivityTimer) clearTimeout(state.ui.inactivityTimer);
+    // state.ui.inactivityTimer = setTimeout(() => {
+    //     // Only show black screen overlay if we are already in gameplay
+    //     if (state.appPhase === 'gameplay') {
+    //         dom.overlayBlack.style.display = 'block';
+    //         state.appPhase = 'black_screen'; // Effectively go back to sleep
+    //     }
+    // }, CONFIG.TIMEOUT_MS);
 }
 
 function setupEventListeners() {
