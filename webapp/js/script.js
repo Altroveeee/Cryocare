@@ -1,6 +1,6 @@
 // 1. Import Firebase from the CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 // 2. Paste your specific configuration here
 const firebaseConfig = {
@@ -1010,16 +1010,8 @@ function shouldButtonBeVisible(pageId, id) {
 }
 
 function triggerHardware() {
-    // const ip = CONFIG.HARDWARE?.ESP_IP;
-    // if(ip) fetch(`${ip}/servo`).catch(e => console.warn("Hardware err", e));
-    // Write "true" to the trigger path
-    set(ref(db, 'device/trigger'), true)
-    .then(() => {
-        console.log("Command Sent! Waiting for Arduino...");
-    })
-    .catch((error) => {
-        console.error("Error sending command:", error);
-    });
+    const ip = CONFIG.HARDWARE?.ESP_IP;
+    if(ip) fetch(`${ip}/servo`).catch(e => console.warn("Hardware err", e));
 }
 
 function resetInactivityTimer() {
