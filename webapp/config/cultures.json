@@ -19,8 +19,8 @@
             "cultureName": "Amazigh",
             "foodName": "Couscous",
             "foodDescription": "A staple dish made from steamed semolina grains.",
-            "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg1": "I entered cryoconservation when my alphabet, the Tifinagh, was banned.",
+            "endMsg2": "I refused to live where my soul was treated as a foreign shadow."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["1", "3", "2"],
@@ -33,8 +33,8 @@
             "cultureName": "Maori",
             "foodName": "Hangi",
             "foodDescription": "A traditional Maori method of cooking food using heated rocks buried in a pit oven.",
-            "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg1": "I chose the deep sleep when our ancestral lands were seized.",
+            "endMsg2": "I am waiting for a world where the spirit of the Whakapapa is respected again."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["3", "2", "1"],
@@ -47,8 +47,8 @@
             "cultureName": "Palestinian",
             "foodName": "Maqluba",
             "foodDescription": "A traditional Palestinian dish made with rice, meat, and fried vegetables.",
-            "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg1": "Now that olive groves are uprooted and my keys no longer fit any door.",
+            "endMsg2": "I am preserved until the map remembers my name and the borders turn to dust."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["3", "2", "1"],
@@ -61,8 +61,8 @@
             "cultureName": "Uyghur",
             "foodName": "Laghman",
             "foodDescription": "A traditional Uyghur dish made with hand-pulled noodles and stir-fried vegetables and meat.",
-            "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg1": "When the mosques were torn down, my brothers disappeared into the camps.",
+            "endMsg2": "I am holding my breath until my culture is no longer a crime."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
@@ -75,8 +75,8 @@
             "cultureName": "Guarani",
             "foodName": "Sopa Paraguaya",
             "foodDescription": "A traditional Paraguayan dish made with cornmeal, cheese, and onions.",
-            "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg1": "I went into the ice as the great forests fell and our sacred chants were drowned by machines.",
+            "endMsg2": "I will only wake when the earth speaks the language of the spirits again."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["1", "2", "3"],
