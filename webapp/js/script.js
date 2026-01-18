@@ -1164,6 +1164,7 @@ async function handleStartupSequence() {
     // Switch to Welcome (Animation) and Fade In
     state.loadingStep = 'welcome';
     updateUI();
+    triggerHardware();
     dom.petImage.style.opacity = '1';
     
     await new Promise(r => setTimeout(r, 3000));
