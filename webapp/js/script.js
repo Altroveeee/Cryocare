@@ -1015,7 +1015,7 @@ function triggerHardware() {
     // Write "true" to the trigger path
     set(ref(db, 'device/trigger'), true)
     .then(() => {
-        alert("Command Sent! Waiting for Arduino...");
+        console.log("Command Sent! Waiting for Arduino...");
     })
     .catch((error) => {
         console.error("Error sending command:", error);
