@@ -56,12 +56,12 @@ void setup() {
   }
 
   // Configuring static IP
-  Serial.println("Configuring static IP");
-  if(!WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS)) {
-    Serial.println("Failed to configure Static IP");
-  } else {
-    Serial.println("Static IP configured!");
-  }
+  // Serial.println("Configuring static IP");
+  // if(!WiFi.config(staticIP, gateway, subnet, primaryDNS, secondaryDNS)) {
+  //   Serial.println("Failed to configure Static IP");
+  // } else {
+  //   Serial.println("Static IP configured!");
+  // }
 
   Serial.println("\nConnesso!");
   Serial.print("IP ESP32: ");
