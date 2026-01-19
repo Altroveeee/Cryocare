@@ -7,7 +7,8 @@ from firebase_admin import db
 # --- CONFIGURATION ---
 CREDENTIAL_PATH = "serviceAccountKey.json"
 DATABASE_URL = "https://cryocare-46397-default-rtdb.europe-west1.firebasedatabase.app"
-TARGET_URL = "http://192.168.1.118/servo"
+# TARGET_URL = "http://192.168.1.118/servo" # For home WiFi
+TARGET_URL = "http://172.20.10.4/servo"  # For iPhone Hotspot
 TRIGGER_FIELD_PATH = 'device/trigger' 
 # ---------------------
 
