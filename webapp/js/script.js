@@ -706,6 +706,7 @@ function startUndressSequence(e) {
 
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_UNDRESS);
+    triggerHardware();
     
     // Spawn bottone
     const btn = document.createElement('div');
