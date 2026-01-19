@@ -934,6 +934,7 @@ function triggerRitual() {
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_RITUAL);
     updateUI();
+    triggerHardware();
     state.timers.ritual = setTimeout(() => {
         state.ui.isGifPlaying = false;
         startEndingPhase();
@@ -987,6 +988,7 @@ async function runFinalZoomSequence() {
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.BYE_BYE_ANIMATION);
     
     updateUI();
+    triggerHardware();
 }
 
 /* ==========================================================================
@@ -1156,6 +1158,7 @@ function setupEventListeners() {
                 } else if (s.feedingState === 'eating') {
                     s.feedingState = 'sharing';
                     updateUI();
+                    triggerHardware();
                     setTimeout(() => {
                         s.feedingState = 'done';
                         updateUI();
