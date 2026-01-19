@@ -1063,10 +1063,20 @@ function setupEventListeners() {
 
     // Navigation
     const nav = (dir) => {
-        if(dir==='prev' && state.currentPageIndex > 0) state.currentPageIndex--;
-        if(dir==='next' && state.currentPageIndex < PAGES.length-1) state.currentPageIndex++;
-        updateUI();
-        resetInactivityTimer();
+        const isBaking = state.gameplay.bakingState !== 'none' && state.gameplay.bakingState !== 'done';
+        const isFeeding = state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done';
+        const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding || state.appPhase === 'ending_sequence';
+
+        let canGoRight = false;
+        if (state.currentPageIndex === 0 && state.unlocked.food) canGoRight = true;
+        else if (state.currentPageIndex === 1 && state.unlocked.dress) canGoRight = true;
+
+        if (!hideArrows) {
+            if(dir==='prev' && state.currentPageIndex > 0) state.currentPageIndex--;
+            if(dir==='next' && canGoRight && state.currentPageIndex < PAGES.length-1) state.currentPageIndex++;
+            updateUI();
+            resetInactivityTimer();
+        }
     };
     dom.navLeft.onclick = () => nav('prev');
     dom.navRight.onclick = () => nav('next');
