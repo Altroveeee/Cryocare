@@ -550,9 +550,9 @@ function renderButtons() {
 
             const btn = document.createElement('div');
             btn.className = 'round-button ' + (page.id === 'food' ? 'food-button' : 'dress-button');
-            const size = 15; 
-            btn.style.width = `${size}%`;
-            btn.style.aspectRatio = '1 / 1';
+            const size = 50; 
+            btn.style.width = `${size}px`;
+            btn.style.height = `${size}px`;
             
             btn.style.left = pos.left;
             btn.style.top = pos.top;
@@ -701,55 +701,58 @@ function startUndressSequence(e) {
     const dressId = state.gameplay.chosenDressId;
     if (!dressId) return;
 
-    // 1. Show Undress GIF -> Then Default Pet
-    // We can use the generic undress gif or a specific one if needed.
-    // Assuming generic for now as per plan.
+    // Normalizza coordinate evento iniziale (Touch vs Mouse)
+    const point = e.touches ? e.touches[0] : e;
+
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_UNDRESS);
     
-    // 2. Spawn the Button under cursor
+    // Spawn bottone
     const btn = document.createElement('div');
     btn.className = 'round-button dress-button';
-    const size = 15; 
-    btn.style.width = `${size}%`;
-    btn.style.aspectRatio = '1 / 1';
+    const size = 50; 
+    btn.style.width = `${size}px`;
+    btn.style.height = `${size}px`;
     
-    // Position at cursor
-    const initialLeft = e.clientX; 
-    const initialTop = e.clientY;
+    const initialLeft = point.clientX; 
+    const initialTop = point.clientY;
     
     document.body.appendChild(btn);
     btn.style.position = 'fixed';
-    btn.style.left = (initialLeft) + 'px'; // Start top-left at cursor? Or center?
-    btn.style.top = (initialTop) + 'px';   // Let's just set it. 
+    btn.style.left = (initialLeft) + 'px';
+    btn.style.top = (initialTop) + 'px';
     
     const img = document.createElement('img');
     img.src = CONFIG.ASSETS.BUTTON_PREFIX.replace('{culture}', state.currentCulture) + `dress${dressId}.png`;
     btn.appendChild(img);
     
     btn.style.zIndex = 1000;
-    btn.style.transform = 'translate(-50%, -50%)'; // Center on cursor
+    btn.style.transform = 'translate(-50%, -50%)'; 
     
     state.ui.isAnyButtonDragging = true;
     
-    // 3. Drag Logic
-    let startX = e.clientX;
-    let startY = e.clientY;
+    let startX = point.clientX;
+    let startY = point.clientY;
     
     const onMove = (mv) => {
-        mv.preventDefault();
-        const dx = mv.clientX - startX;
-        const dy = mv.clientY - startY;
+        // FIX iOS 12
+        if (mv.cancelable) mv.preventDefault();
+        
+        const mvPoint = mv.touches ? mv.touches[0] : mv;
+        const dx = mvPoint.clientX - startX;
+        const dy = mvPoint.clientY - startY;
         btn.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     };
     
     const onEnd = (endEvent) => {
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onEnd);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onEnd);
+
         state.ui.isAnyButtonDragging = false;
-        state.ui.isGifPlaying = false; // Stop forcing the GIF/Undressed state
+        state.ui.isGifPlaying = false; 
         
-        // Calculate Distance from Center
         const btnRect = btn.getBoundingClientRect();
         const btnCx = btnRect.left + btnRect.width / 2;
         const btnCy = btnRect.top + btnRect.height / 2;
@@ -761,37 +764,44 @@ function startUndressSequence(e) {
         const THRESHOLD = 80;
         
         if (dist > THRESHOLD) {
-            // SUCCESS: Removed dress
             state.gameplay.chosenDressId = null;
             state.progress.dress = false;
-            state.progress.ritual = false; // Reset ritual if undressed? Usually yes.
+            state.progress.ritual = false; 
             state.gameplay.currentPetImage = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
             
             setTimeout(() => {
-                btn.remove(); // Remove temp
-                updateUI();   // Re-render buttons (this will show the button in its arc)
+                btn.remove(); 
+                updateUI();   
             }, 500);
         } else {
-            // CANCEL: Dropped back on pet
             btn.remove();
-            updateUI(); // Will restore dressed image
+            updateUI(); 
         }
     };
     
+    // Listener ibridi
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onEnd);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
 }
 
 function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
     let startX, startY;
     let initialLeft, initialTop;
 
+    // Funzione unificata per iniziare il drag (supporta Touch e Mouse)
     const onStart = (e) => {
-        if(state.ui.isAnyButtonDragging) return;
-        e.preventDefault(); 
-        startX = e.clientX;
-        startY = e.clientY;
+        if (state.ui.isAnyButtonDragging) return;
         
+        // Importante per iOS 12: Previene comportamenti fantasma e scroll
+        if (e.cancelable && e.type === 'touchstart') e.preventDefault();
+
+        // Normalizza le coordinate (Touch vs Mouse)
+        const point = e.touches ? e.touches[0] : e;
+        startX = point.clientX;
+        startY = point.clientY;
+
         const rect = element.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
@@ -800,40 +810,49 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
         element.style.position = 'fixed';
         element.style.left = initialLeft + 'px';
         element.style.top = initialTop + 'px';
-        element.style.transform = 'none'; // Clear translate
+        element.style.transform = 'none';
         element.style.zIndex = 1000;
-        
+
         animateButtonPress(element);
 
         state.ui.isAnyButtonDragging = true;
-        
+
+        // Handler per il movimento
         const onMove = (mv) => {
-            mv.preventDefault();
-            const dx = mv.clientX - startX;
-            const dy = mv.clientY - startY;
+            // FIX CRITICO iOS 12: preventDefault qui blocca lo scroll della pagina
+            if (mv.cancelable) mv.preventDefault();
+            
+            const mvPoint = mv.touches ? mv.touches[0] : mv;
+            const dx = mvPoint.clientX - startX;
+            const dy = mvPoint.clientY - startY;
             element.style.transform = `translate(${dx}px, ${dy}px)`;
         };
-        
+
+        // Handler per la fine del drag
         const onEnd = (endEvent) => {
+            // Rimuovi listener Mouse E Touch
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onEnd);
+            window.removeEventListener('touchmove', onMove);
+            window.removeEventListener('touchend', onEnd);
+
             state.ui.isAnyButtonDragging = false;
-            
+
             const btnRect = element.getBoundingClientRect();
             const btnCx = btnRect.left + btnRect.width / 2;
             const btnCy = btnRect.top + btnRect.height / 2;
-            
+
             const screenCx = window.innerWidth / 2;
             const screenCy = window.innerHeight / 2;
-            
+
             const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
-            const DROP_THRESHOLD = 80; // px
-            
+            const DROP_THRESHOLD = 80;
+
             let success = false;
             if (dist < DROP_THRESHOLD) {
                 success = onDropCallback();
             }
-            
+
             if (!success) {
                 element.style.transition = 'transform 0.3s';
                 element.style.transform = 'translate(0,0)';
@@ -843,19 +862,26 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
                     element.style.position = 'absolute';
                     element.style.left = resetLeft;
                     element.style.top = resetTop;
-                    element.style.transform = ''; 
+                    element.style.transform = '';
                     element.style.zIndex = '';
                 }, 300);
             } else {
-                element.style.display = 'none'; 
+                element.style.display = 'none';
             }
         };
-        
+
+        // Aggiungi listener con { passive: false } per iOS 12
         window.addEventListener('pointermove', onMove, { passive: false });
         window.addEventListener('pointerup', onEnd);
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onEnd);
     };
 
+    // Attacca l'evento di inizio sia per Pointer che per Touch
     element.addEventListener('pointerdown', onStart);
+    element.addEventListener('touchstart', onStart, { passive: false });
+    
+    // Fallback CSS (anche se su iOS 12 serve il preventDefault JS sopra)
     element.style.touchAction = 'none';
 }
 
