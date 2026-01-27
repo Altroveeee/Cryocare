@@ -81,6 +81,25 @@ const dom = {}; // Populated in init
 const CLICK_SOUND = new Audio('assets/audio/click_sound.mp3');
 CLICK_SOUND.volume = 0.5;
 
+const INFO_SOUND = new Audio('assets/audio/interazione/info.mp3'); // Assicurati che il file esista
+INFO_SOUND.volume = 0.5;
+
+const BOWL_SOUND = new Audio('assets/audio/interazione/ciotola.mp3'); 
+BOWL_SOUND.volume = 0.5;
+
+const PROGRESS_SOUND = new Audio('assets/audio/interazione/trust.mp3'); 
+PROGRESS_SOUND.volume = 0.6;
+
+const MEMORY_SOUND = new Audio('assets/audio/interazione/apertura_ricordo.mov'); 
+MEMORY_SOUND.volume = 0.5;
+
+const BUBBLE_SOUND = new Audio('assets/audio/interazione/appear_nuvola.mp3'); 
+BUBBLE_SOUND.volume = 0.5;
+
+const DRAG_START_SOUND = new Audio('assets/audio/interazione/swipe.mp3');
+DRAG_START_SOUND.volume = 0.5;
+
+
 /* ==========================================================================
    INITIALIZATION
    ========================================================================== */
@@ -346,11 +365,21 @@ function evaluateTopButton() {
         if (desiredType) {
             if (desiredType === 'ritual') {
                 state.ui.topButton.visible = true; // Immediate
+
+                // --- AGGIUNTA: Suono per la nuvoletta del rituale ---
+                BUBBLE_SOUND.currentTime = 0;
+                BUBBLE_SOUND.play().catch(()=>{});
+                // ----------------------------------------------------
             } else {
                 // Random Delay 1-3s
                 const delay = 1000 + Math.random() * 2000;
                 state.ui.topButton.timer = setTimeout(() => {
                     state.ui.topButton.visible = true;
+
+                    // --- AGGIUNTA: Suono quando la nuvoletta appare dopo il delay ---
+                    BUBBLE_SOUND.currentTime = 0;
+                    BUBBLE_SOUND.play().catch(()=>{});
+                    // ----------------------------------------------------------------
                     updateUI();
                 }, delay);
             }
@@ -397,6 +426,11 @@ function updateImages() {
         if (score > state.ui.lastProgressScore) {
             state.ui.lastProgressScore = score;
             state.ui.isProgressAnimating = true;
+
+            // --- AGGIUNTA: Fai partire il suono ---
+            PROGRESS_SOUND.currentTime = 0;
+            PROGRESS_SOUND.play().catch(e => console.warn("Audio Progress failed", e));
+            // --------------------------------------
             
             // Play GIF
             dom.progressBarImage.src = `${CONFIG.ASSETS.PROGRESS_BAR_PREFIX}${score}.gif`;
@@ -520,6 +554,10 @@ function updateControls() {
         const infoBtn = document.createElement('img');
         infoBtn.src = 'assets/defaults/info.png';
         infoBtn.onclick = () => {
+            // --- AGGIUNTA: Riproduci il suono ---
+            INFO_SOUND.currentTime = 0; 
+            INFO_SOUND.play().catch(e => console.warn("Audio Info failed", e));
+    // ------------------------------------
              dom.infoContent.innerText = getText(`INFO_${PAGES[state.currentPageIndex].id.toUpperCase()}`);
              dom.overlayInfo.style.display = 'flex';
         };
@@ -814,6 +852,11 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
         element.style.transform = 'none';
         element.style.zIndex = 1000;
 
+        // --- AGGIUNTA: Suono quando si inizia a trascinare ---
+        DRAG_START_SOUND.currentTime = 0;
+        DRAG_START_SOUND.play().catch(()=>{});
+        // -----------------------------------------------------
+
         animateButtonPress(element);
 
         state.ui.isAnyButtonDragging = true;
@@ -934,16 +977,40 @@ function triggerRitual() {
     state.progress.ritual = true;
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_RITUAL);
+
+   // --- LOGICA AUDIO DINAMICO ---
+    // Recupera l'ID della cultura corrente (es. 'amazigh', 'maori', 'kurd')
+    const culturaAttiva = state.currentCulture; 
+    
+    // Costruisce il percorso: assets/audio/rito/ritual_amazigh.mp3
+    const percorsoAudio = `assets/audio/rito/ritual_${culturaAttiva}.mov`;
+    
+    const suonoRituale = new Audio(percorsoAudio);
+    suonoRituale.volume = 0.6;
+    
+    suonoRituale.play().catch(e => {
+        console.error("Non trovo l'audio:", percorsoAudio);
+    });
+    // ------------------------------
+
     updateUI();
     triggerHardware();
     state.timers.ritual = setTimeout(() => {
         state.ui.isGifPlaying = false;
+        // --- AGGIUNTA: Ferma l'audio quando finisce la GIF ---
+        suonoRituale.pause();
+        suonoRituale.currentTime = 0; // Riporta l'audio all'inizio per la prossima volta
         startEndingPhase();
     }, CONFIG.GIF_DURATION_MS);
 }
 
 function triggerMemory() {
     const memoryIndex = state.currentPageIndex + 1; // 1, 2, 3
+
+    // --- AGGIUNTA: Riproduci il suono ---
+    MEMORY_SOUND.currentTime = 0;
+    MEMORY_SOUND.play().catch(e => console.warn("Audio Memory failed", e));
+    // ------------------------------------
     
     dom.overlayMemory.classList.add('visible');
     dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
@@ -1149,14 +1216,26 @@ function setupEventListeners() {
                 const s = state.gameplay;
                 
                 if (s.bakingState === 'baked') {
+                    // Clicchi per tirare fuori il cibo dal forno
+                    BOWL_SOUND.currentTime = 0;
+                    BOWL_SOUND.play().catch(()=>{});
+
                     s.bakingState = 'done';
                     s.feedingState = 'ready_to_eat';
                     updateUI();
                 } else if (s.feedingState === 'ready_to_eat') {
+                    // Clicchi sulla ciotola per far mangiare l'omino
+                    BOWL_SOUND.currentTime = 0;
+                    BOWL_SOUND.play().catch(()=>{});
+
                     s.feedingState = 'eating';
                     state.progress.food = true;
                     updateUI();
                 } else if (s.feedingState === 'eating') {
+                    // Clicchi per condividere il cibo 
+                    BOWL_SOUND.currentTime = 0;
+                    BOWL_SOUND.play().catch(()=>{});
+
                     s.feedingState = 'sharing';
                     updateUI();
                     triggerHardware();
