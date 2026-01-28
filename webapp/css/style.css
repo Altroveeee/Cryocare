@@ -165,17 +165,21 @@ body {
     border-radius: 50%;
     overflow: hidden;
     background-color: white;
+    width: 60px !important;  /* Regola questo numero per la grandezza del cerchio */
+    height: 60px !important;
 }
 
+/* Per i vestiti */
 .dress-button img {
-    width: 200%;
+    width: 200%;  /* Aumenta dal 200% per farli uscire o riempire di più */
     height: 200%;
     object-fit: contain;
 }
 
+/* Per gli ingredienti del cibo */
 .food-button img {
-    width: 400%;
-    height: 400%;
+    width: 550%;  /* Aumenta dal 400% per zoomare di più sull'ingrediente */
+    height: 550%;
     object-fit: contain;
 }
 
