@@ -42,18 +42,18 @@
         "CORRECT_DRESS_ID": "1"
     },
     "TEXT_TEMPLATES": {
-        "WELCOME": "Hello! Thank you for adopting me!",
+        "WELCOME": "Hello! Thank you \nfor adopting me!",
         "INTRO": "I'm {petName}, a {cultureName} Cultural Guardian",
-        "COOKING": "Cooking...",
-        "INFO_HOME": "Meet the Guardian's needs to gain his trust",
-        "INFO_FOOD": "Select the ingredients in the correct order",
+        "COOKING": "\nCooking...",
+        "INFO_HOME": "Tap on the clouds to interact \nwith me!",
+        "INFO_FOOD": "Swipe the food \ninside the bowl \nin the right order",
         "INFO_DRESS": "Choose the proper dress for the ritual",
-        "FOOD_NAME": "{foodName}",
+        "FOOD_NAME": "<span style='color: #8AA1CE;'>{foodName}</span>",
         "FOOD_DESCRIPTION": "{foodDescription}",
         "END_MSG_1": "{endMsg1}",
         "END_MSG_2": "{endMsg2}",
         "END_MSG_FINAL_TOP": "Thank you for taking care of me!",
-        "END_MSG_FINAL_BOT": "Come back tomorrow!"
+        "END_MSG_FINAL_BOT": "\nCome back tomorrow!"
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,

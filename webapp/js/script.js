@@ -643,7 +643,7 @@ function updateContentZones() {
 
     if (state.ui.tempContent.top) topContent = state.ui.tempContent.top;
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
-    else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME') };
+    else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME')};
     
     // Ending Sequence Logic
     if (state.appPhase === 'ending_sequence') {
@@ -714,6 +714,13 @@ function renderZone(container, content) {
     if (!content) return;
     if (content.type === 'text') {
         const s = document.createElement('span');
+
+        // MODIFICA QUESTA RIGA: cambia .textContent in .innerHTML
+        s.innerHTML = content.value; 
+        
+        container.appendChild(s);
+    } else if (content.type === 'html') {
+        
         s.textContent = content.value;
         container.appendChild(s);
     } else if (content.type === 'button') {

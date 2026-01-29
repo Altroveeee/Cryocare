@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'Avenir Next';
-    src: url('../assets/defaults/font/AvenirNextLTPro-Regular\ copia.otf') format('opentype'); 
+    src: url('../assets/defaults/font/AvenirNextLTPro-Medium.otf') format('opentype'); 
     font-weight: normal;
     font-style: normal;
 }
@@ -99,6 +99,7 @@ body {
 }
 
 .content-zone span {
+    white-space: pre-line; /* Questa riga permette al \n di funzionare */
     font-size: 6vw; /* Responsive text */
     background: rgba(255, 255, 255, 0.7); 
     border-radius: 10px;

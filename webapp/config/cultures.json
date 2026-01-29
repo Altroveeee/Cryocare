@@ -3,10 +3,10 @@
         "VARIABLES": {
             "petName": "Rojan",
             "cultureName": "Kurdish",
-            "foodName": "Dolma",
-            "foodDescription": "A traditional dish made of stuffed vegetables.",
+            "foodName": "\n\nDolma",
+            "foodDescription": "A traditional dish made \nof stuffed vegetables.",
             "endMsg1": "I entered cryoconservation after all kurdish schools were shut.",
-            "endMsg2": "Speaking my language was criminalized. My future vanished."
+            "endMsg2": "Speaking my language \nwas criminalized. \nMy future vanished."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
