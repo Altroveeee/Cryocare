@@ -396,12 +396,20 @@ function applyLayoutPositions() {
     };
 
     setY(dom.progressBarContainer, layout.PROGRESS_BAR_Y);
-    setY(dom.petImage, layout.PET_Y);
+
+    if (state.appPhase === 'waiting_for_click' || state.loadingStep === 'static') {
+        setY(dom.petImage, layout.PET_Y_INTRO);
+    } else {
+        setY(dom.petImage, layout.PET_Y);
+    }
     setY(dom.tableImage, layout.PET_Y);
-    // Bowl might need specific tweaking or stick to pet Y
-    setY(dom.bowlImage, layout.PET_Y + 10); 
+    setY(dom.bowlImage, layout.PET_Y + 10);
     
-    setY(dom.zoneTop, layout.TEXT_TOP_Y);
+    if (state.ui.topButton.visible || state.endingStep === "button_wait") {
+        setY(dom.zoneTop, layout.CLOUD_TOP_Y);
+    } else {
+        setY(dom.zoneTop, layout.TEXT_TOP_Y);
+    }
     setY(dom.zoneBot, layout.TEXT_BOT_Y);
     
     // Buttons Container is centered (0), individual buttons are offset

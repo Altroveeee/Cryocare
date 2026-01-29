@@ -57,10 +57,12 @@
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,
-        "TEXT_TOP_Y": -30,
-        "PET_Y": 0,
-        "TEXT_BOT_Y": 15,
-        "BUTTONS_Y": 33,
+        "TEXT_TOP_Y": -35,
+        "CLOUD_TOP_Y": -30,
+        "PET_Y_INTRO": 0,
+        "PET_Y" : 5,
+        "TEXT_BOT_Y": 20,
+        "BUTTONS_Y": 35,
         "INFO_BTN_Y": 40
     },  
     "HARDWARE": {
