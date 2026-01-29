@@ -540,8 +540,9 @@ function updateControls() {
     // Hide during loading, baking, or feeding interaction
     const isBaking = state.gameplay.bakingState !== 'none' && state.gameplay.bakingState !== 'done';
     const isFeeding = state.gameplay.feedingState !== 'idle' && state.gameplay.feedingState !== 'done';
-    const hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding || state.appPhase === 'ending_sequence';
+    let hideArrows = state.appPhase !== 'gameplay' || isBaking || isFeeding || state.appPhase === 'ending_sequence';
 
+    hideArrows = true; // --- AGGIUNTA: Nascondi sempre le frecce di navigazione ---
     if (hideArrows) {
         dom.navLeft.style.display = 'none';
         dom.navRight.style.display = 'none';
