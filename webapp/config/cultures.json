@@ -17,10 +17,10 @@
         "VARIABLES": {
             "petName": "Meryem",
             "cultureName": "Amazigh",
-            "foodName": "Couscous",
-            "foodDescription": "A staple dish made from steamed semolina grains.",
-            "endMsg1": "I entered cryoconservation when my alphabet, the Tifinagh, was banned.",
-            "endMsg2": "I refused to live where my soul was treated as a foreign shadow."
+            "foodName": "\n\nCouscous",
+            "foodDescription": "A staple dish made \nfrom steamed semolina grains.",
+            "endMsg1": "I entered cryoconservation \nwhen my alphabet, \nthe Tifinagh, was banned.",
+            "endMsg2": "I refused to live \nwhere my soul was treated \nas a foreign shadow."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["1", "3", "2"],
@@ -31,10 +31,10 @@
         "VARIABLES": {
             "petName": "Kauri",
             "cultureName": "Maori",
-            "foodName": "Hangi",
-            "foodDescription": "A traditional Maori method of cooking food using heated rocks buried in a pit oven.",
+            "foodName": "\n\nHangi",
+            "foodDescription": "A traditional Maori method of cooking food using heated rocks buried \nin a pit oven.",
             "endMsg1": "I chose the deep sleep when our ancestral lands were seized.",
-            "endMsg2": "I am waiting for a world where the spirit of the Whakapapa is respected again."
+            "endMsg2": "I am waiting for a world where the spirit \nof the Whakapapa \nis respected again."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["3", "2", "1"],
@@ -45,10 +45,10 @@
         "VARIABLES": {
             "petName": "Ibrahim",
             "cultureName": "Palestinian",
-            "foodName": "Maqluba",
+            "foodName": "\n\nMaqluba",
             "foodDescription": "A traditional Palestinian dish made with rice, meat, and fried vegetables.",
-            "endMsg1": "Now that olive groves are uprooted and my keys no longer fit any door.",
-            "endMsg2": "I am preserved until the map remembers my name and the borders turn to dust."
+            "endMsg1": "Now that olive groves \nare uprooted and my keys \nno longer fit any door.",
+            "endMsg2": "I am preserved \nuntil the map remembers my name and the borders \nturn to dust."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["3", "2", "1"],
@@ -59,10 +59,10 @@
         "VARIABLES": {
             "petName": "Erkin",
             "cultureName": "Uyghur",
-            "foodName": "Laghman",
+            "foodName": "\n\nLaghman",
             "foodDescription": "A traditional Uyghur dish made with hand-pulled noodles and stir-fried vegetables and meat.",
-            "endMsg1": "When the mosques were torn down, my brothers disappeared into the camps.",
-            "endMsg2": "I am holding my breath until my culture is no longer a crime."
+            "endMsg1": "When the mosques were torn down, my brothers disappeared \ninto the camps.",
+            "endMsg2": "I am holding my breath until my culture \nis no longer a crime."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["2", "1", "3"],
@@ -73,10 +73,10 @@
         "VARIABLES": {
             "petName": "Araí",
             "cultureName": "Guarani",
-            "foodName": "Sopa Paraguaya",
+            "foodName": "\n\nSopa Paraguaya",
             "foodDescription": "A traditional Paraguayan dish made with cornmeal, cheese, and onions.",
-            "endMsg1": "I went into the ice as the great forests fell and our sacred chants were drowned by machines.",
-            "endMsg2": "I will only wake when the earth speaks the language of the spirits again."
+            "endMsg1": "I went into the ice \nas the great forests fell \nand our sacred chants \nwere drowned \nby machines.",
+            "endMsg2": "I will only wake \nwhen the earth speaks \nthe language \nof the spirits again."
         },
         "RULES": {
             "CORRECT_FOOD_ORDER": ["1", "2", "3"],
