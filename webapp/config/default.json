@@ -52,12 +52,12 @@
         "FOOD_DESCRIPTION": "{foodDescription}",
         "END_MSG_1": "{endMsg1}",
         "END_MSG_2": "{endMsg2}",
-        "END_MSG_FINAL_TOP": "Thank you for taking care of me!",
+        "END_MSG_FINAL_TOP": "Thank you for taking \ncare of me!",
         "END_MSG_FINAL_BOT": "\nCome back tomorrow!"
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,
-        "TEXT_TOP_Y": -35,
+        "TEXT_TOP_Y": -28,
         "CLOUD_TOP_Y": -30,
         "PET_Y_INTRO": 0,
         "PET_Y" : 5,

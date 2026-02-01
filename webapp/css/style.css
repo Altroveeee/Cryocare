@@ -101,7 +101,7 @@ body {
 .content-zone span {
     white-space: pre-line; /* Questa riga permette al \n di funzionare */
     font-size: 6vw; /* Responsive text */
-    background: rgba(255, 255, 255, 0.7); 
+    background: transparent; 
     border-radius: 10px;
     padding: 5px 10px;
 }
@@ -165,7 +165,6 @@ body {
     background: transparent; 
     border-radius: 50%;
     overflow: hidden;
-    background-color: white;
     width: 60px !important;  /* Regola questo numero per la grandezza del cerchio */
     height: 60px !important;
 }
@@ -202,13 +201,13 @@ body {
     width: 300%;
     height: 300%;
     object-fit: contain;
-    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));
 }
 
 /* End Button Specifics */
 .end-button {
     width: 100px;
     height: 100px;
+    margin-top: 60px;
     background: transparent; 
     border-radius: 50%;
     display: flex;
@@ -217,8 +216,8 @@ body {
     cursor: pointer;
     pointer-events: auto;
     overflow: hidden;
-    transform: translateY(-12vh);
-    animation: end-bounce 1.5s infinite ease-in-out;
+    transform: translateY(-1vh);
+    animation: end-bounce 1.8s infinite ease-in-out;
 }
 .end-button img {
     width: 100%;
@@ -261,6 +260,7 @@ body {
     width: 100%;
     height: 100%;
     background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
     z-index: 200;
     display: none;
     justify-content: center;
@@ -290,6 +290,7 @@ body {
     cursor: pointer;
     opacity: 0;
     visibility: hidden;
+    overflow: hidden;
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
 }
 
@@ -299,9 +300,14 @@ body {
 }
 
 #memory-content-image {
-    width: 88%;
-    height: 88%;
+    max-width: 88%;
+    max-height: 88%;
+    width: auto;
+    height: auto;
+    
     object-fit: contain; /* Ensure memory image fits within oval */
+    display: block;
+    margin: 0 auto;
 }
 
 /* === ANIMATIONS === */

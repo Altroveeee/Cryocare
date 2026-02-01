@@ -906,7 +906,7 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
             const screenCy = window.innerHeight / 2;
 
             const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
-            const DROP_THRESHOLD = 80;
+            const DROP_THRESHOLD = 180;
 
             let success = false;
             if (dist < DROP_THRESHOLD) {
@@ -982,10 +982,30 @@ function startBaking() {
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_BAKING);
     
+    // Primo Timer: Aspetta la durata della GIF (es. 2-3 secondi)
     state.timers.baking = setTimeout(() => {
         state.ui.isGifPlaying = false;
-        state.gameplay.bakingState = 'baked';
+        state.gameplay.bakingState = 'baked'; // Qui appare la descrizione
         updateUI();
+
+        // --- MODIFICA: Secondo Timer (4 secondi di attesa) ---
+        // Salviamo il timer in state.timers così resetTimers() può pulirlo se serve
+        state.timers.autoAdvance = setTimeout(() => {
+            const s = state.gameplay;
+            
+            // Suono (opzionale, per feedback)
+            if (typeof BOWL_SOUND !== 'undefined') {
+                BOWL_SOUND.currentTime = 0;
+                BOWL_SOUND.play().catch(()=>{});
+            }
+
+            // Avanzamento automatico di stato
+            s.bakingState = 'done';
+            s.feedingState = 'ready_to_eat';
+            
+            updateUI(); // Aggiorna la grafica (ciotola piena)
+        }, 3000); // 
+
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -1028,6 +1048,7 @@ function triggerMemory() {
     MEMORY_SOUND.play().catch(e => console.warn("Audio Memory failed", e));
     // ------------------------------------
     
+    dom.memoryContentImage.src = "";
     dom.overlayMemory.classList.add('visible');
     dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
     
