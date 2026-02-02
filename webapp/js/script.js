@@ -1171,8 +1171,8 @@ function showTempMessage(zone, key, duration) {
 function animateButtonPress(el) {
     CLICK_SOUND.currentTime = 0;
     CLICK_SOUND.play().catch(()=>{});
-    el.classList.add('clicked');
-    setTimeout(() => el.classList.remove('clicked'), 200);
+    // el.classList.add('clicked');
+    // setTimeout(() => el.classList.remove('clicked'), 200);
 }
 
 function shouldHideControls(pageId) {
