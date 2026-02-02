@@ -1219,8 +1219,10 @@ function playHapticSound() {
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     
+    console.log("Playing haptic sound");
     oscillator.start(audioCtx.currentTime);
     oscillator.stop(audioCtx.currentTime + 0.1); // Stop after 100ms
+    console.log("Haptic sound scheduled to stop");
 }
 
 function triggerHardware() {
