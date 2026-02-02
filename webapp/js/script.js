@@ -100,6 +100,9 @@ BUBBLE_SOUND.volume = 0.5;
 const DRAG_START_SOUND = new Audio('assets/audio/interazione/swipe.mp3');
 DRAG_START_SOUND.volume = 0.5;
 
+const SIMULATE_VIBRATION_SOUND = new Audio('assets/audio/vibration.mp3');
+SIMULATE_VIBRATION_SOUND.volume = 0.5;
+
 
 /* ==========================================================================
    INITIALIZATION
@@ -1191,45 +1194,10 @@ function shouldButtonBeVisible(pageId, id) {
     return true;
 }
 
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
-
-// This function generates a synthetic "mechanical click"
-function playHapticSound() {
-    // Resume context if it's suspended (browsers often suspend audio until first click)
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-
-    // 1. Configure the sound to feel like a "thud"
-    // 'triangle' wave has a sharper edge than 'sine', feeling more percussive
-    oscillator.type = 'triangle'; 
-    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // 150Hz = Low bass thud
-
-    // 2. Configure the volume envelope (Attack and Decay)
-    // Start at silence, instant jump to high volume, fast fade out
-    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.01); // Attack
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); // Decay
-
-    // 3. Connect and Play
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    console.log("Playing haptic sound");
-    oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.1); // Stop after 100ms
-    console.log("Haptic sound scheduled to stop");
-}
-
 function triggerHardware() {
     // 1. Play the "Fake Haptic" Sound
-    // Reset time to 0 to allow rapid-fire clicking
-    // 1. Play the synthetic sound (The iOS workaround)
-    playHapticSound();
+    SIMULATE_VIBRATION_SOUND.currentTime = 0;
+    SIMULATE_VIBRATION_SOUND.play().catch(()=>{});
 
     // 2. Try real vibration (Will work on Android, ignored on iOS)
     if (navigator.vibrate) navigator.vibrate(200);
