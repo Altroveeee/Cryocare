@@ -34,7 +34,7 @@ body {
 
 /* === MAIN CONTAINER === */
 #oval-container {
-    aspect-ratio: 1325 / 1916; 
+    aspect-ratio: 1325 / 1970; 
     width: 100vw;
     max-width: 100vh; /* Ensure it fits height-wise too */
     max-height: 100vh;
