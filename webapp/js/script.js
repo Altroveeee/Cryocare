@@ -1191,9 +1191,48 @@ function shouldButtonBeVisible(pageId, id) {
     return true;
 }
 
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+// This function generates a synthetic "mechanical click"
+function playHapticSound() {
+    // Resume context if it's suspended (browsers often suspend audio until first click)
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    // 1. Configure the sound to feel like a "thud"
+    // 'triangle' wave has a sharper edge than 'sine', feeling more percussive
+    oscillator.type = 'triangle'; 
+    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // 150Hz = Low bass thud
+
+    // 2. Configure the volume envelope (Attack and Decay)
+    // Start at silence, instant jump to high volume, fast fade out
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.01); // Attack
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); // Decay
+
+    // 3. Connect and Play
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.1); // Stop after 100ms
+}
+
 function triggerHardware() {
-    // const ip = CONFIG.HARDWARE?.ESP_IP;
-    // if(ip) fetch(`${ip}/servo`).catch(e => console.warn("Hardware err", e));
+    // 1. Play the "Fake Haptic" Sound
+    // Reset time to 0 to allow rapid-fire clicking
+    // 1. Play the synthetic sound (The iOS workaround)
+    playHapticSound();
+
+    // 2. Try real vibration (Will work on Android, ignored on iOS)
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    // 3. Send command to Firebase Realtime Database
     set(ref(db, 'device/trigger'), true)
     .then(() => {
         console.log("Command Sent! Waiting for Arduino...");
