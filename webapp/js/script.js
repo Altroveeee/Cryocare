@@ -105,6 +105,10 @@ DRAG_START_SOUND.volume = 0.5;
    ========================================================================== */
 
 async function init(selectedCulture) {
+    document.body.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+    }, { passive: false });
+    
     // 1. Load Config
     await loadConfiguration();
     
@@ -189,6 +193,11 @@ function collectCultureAssets(culture) {
     push(CONFIG.ASSETS.PET_BAKING);
     push(CONFIG.ASSETS.PET_RITUAL);
     push(CONFIG.ASSETS.BYE_BYE_ANIMATION);
+    const qrBase = `assets/${culture}/qr_code`;
+    assets.push(`${qrBase}.png`);             // Base
+    assets.push(`${qrBase}_mem.png`);         // Solo Memoria
+    assets.push(`${qrBase}_naked.png`);       // Solo Svestito
+    assets.push(`${qrBase}_mem_naked.png`);   // Entrambi
     for(let i=1; i<=3; i++) push(CONFIG.ASSETS.PET_DRESS.replace('{id}', i));
     push(CONFIG.ASSETS.BAKED_FOOD);
 
@@ -461,7 +470,32 @@ function updateImages() {
     let petSrc = s.currentPetImage;
     let showPet = true;
     
-    if (state.ui.isGifPlaying) {
+    if (state.endingStep === 'qr_page') {
+        // 1. Controlliamo se la memoria del livello Cibo è stata sbloccata
+        const hasSeenMemory = state.memoriesViewed.food === true;
+
+        // 2. Controlliamo se il personaggio è "nudo" (nessun vestito selezionato)
+        // Se chosenDressId è null o undefined, significa che è stato svestito.
+        const isUndressed = !state.gameplay.chosenDressId;
+
+        // 3. Costruiamo il suffisso del file in base ai due stati
+        let suffix = "";
+        
+        if (hasSeenMemory) {
+            suffix += "_mem";
+        }
+        
+        if (isUndressed) {
+            suffix += "_naked";
+        }
+        
+        // 4. Assegniamo il percorso finale. 
+        // Risultati possibili: "qr_code.png", "qr_code_mem.png", "qr_code_naked.png", "qr_code_mem_naked.png"
+        petSrc = `assets/${state.currentCulture}/qr_code${suffix}.png`;
+
+    } 
+
+    else if (state.ui.isGifPlaying) {
         petSrc = dom.petImage.src; // Keep current GIF
     } else if (state.appPhase === 'waiting_for_click') {
         petSrc = CONFIG.ASSETS.LOADING_STATIC;
@@ -653,7 +687,7 @@ function updateContentZones() {
 
     if (state.ui.tempContent.top) topContent = state.ui.tempContent.top;
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
-    else if (state.gameplay.bakingState === 'baked') topContent = { type:'html', value: getText('FOOD_NAME')};
+    else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME')};
     
     // Ending Sequence Logic
     if (state.appPhase === 'ending_sequence') {
@@ -667,6 +701,10 @@ function updateContentZones() {
         } else if (state.endingStep === 'goodbye') {
             topContent = { type: 'text', value: getText('END_MSG_FINAL_TOP') };
             botContent = { type: 'text', value: getText('END_MSG_FINAL_BOT') };
+        }
+        else if (state.endingStep === 'qr_page') {
+            topContent = { type: 'text', value: getText('QR_TOP') };
+            botContent = { type: 'text', value: getText('QR_BOT') };
         }
     }
     
@@ -713,7 +751,7 @@ function updateContentZones() {
     else if (state.gameplay.bakingState === 'baked') botContent = { type:'text', value: getText('FOOD_DESCRIPTION') };
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'instructions') {
         topContent = { type:'text', value: getText('WELCOME') };
-        botContent = { type:'html', value: getText('INTRO') };
+        botContent = { type:'text', value: getText('INTRO') };
     };
 
     renderZone(dom.zoneTop, topContent);
@@ -730,11 +768,9 @@ function renderZone(container, content) {
         
         container.appendChild(s);
     } else if (content.type === 'html') {
-        // Parse HTML text and create corresponding elements
-        const template = document.createElement('template');
-        template.innerHTML = content.value.trim();
         
-        container.appendChild(template.content);
+        s.textContent = content.value;
+        container.appendChild(s);
     } else if (content.type === 'button') {
         const b = document.createElement('div');
         b.className = content.isEndButton ? 'end-button' : 'ritual-btn';
@@ -909,7 +945,7 @@ function setupDragAndDrop(element, resetLeft, resetTop, onDropCallback) {
             const screenCy = window.innerHeight / 2;
 
             const dist = Math.hypot(btnCx - screenCx, btnCy - screenCy);
-            const DROP_THRESHOLD = 80;
+            const DROP_THRESHOLD = 180;
 
             let success = false;
             if (dist < DROP_THRESHOLD) {
@@ -985,10 +1021,30 @@ function startBaking() {
     state.ui.isGifPlaying = true;
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_BAKING);
     
+    // Primo Timer: Aspetta la durata della GIF (es. 2-3 secondi)
     state.timers.baking = setTimeout(() => {
         state.ui.isGifPlaying = false;
-        state.gameplay.bakingState = 'baked';
+        state.gameplay.bakingState = 'baked'; // Qui appare la descrizione
         updateUI();
+
+        // --- MODIFICA: Secondo Timer (4 secondi di attesa) ---
+        // Salviamo il timer in state.timers così resetTimers() può pulirlo se serve
+        state.timers.autoAdvance = setTimeout(() => {
+            const s = state.gameplay;
+            
+            // Suono (opzionale, per feedback)
+            if (typeof BOWL_SOUND !== 'undefined') {
+                BOWL_SOUND.currentTime = 0;
+                BOWL_SOUND.play().catch(()=>{});
+            }
+
+            // Avanzamento automatico di stato
+            s.bakingState = 'done';
+            s.feedingState = 'ready_to_eat';
+            
+            updateUI(); // Aggiorna la grafica (ciotola piena)
+        }, 3000); // 
+
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -1031,6 +1087,7 @@ function triggerMemory() {
     MEMORY_SOUND.play().catch(e => console.warn("Audio Memory failed", e));
     // ------------------------------------
     
+    dom.memoryContentImage.src = "";
     dom.overlayMemory.classList.add('visible');
     dom.memoryContentImage.src = CONFIG.ASSETS.MEMORY_OPENING_GIF;
     
@@ -1076,6 +1133,13 @@ async function runFinalZoomSequence() {
     
     updateUI();
     triggerHardware();
+
+    await new Promise(r => setTimeout(r, CONFIG.GIF_DURATION_MS || 4000));
+    if (state.sessionToken !== myToken) return;
+
+    state.ui.isGifPlaying = false;
+    state.endingStep = 'qr_page'; // Nuovo stato
+    updateUI();
 }
 
 /* ==========================================================================
