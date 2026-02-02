@@ -189,6 +189,11 @@ function collectCultureAssets(culture) {
     push(CONFIG.ASSETS.PET_BAKING);
     push(CONFIG.ASSETS.PET_RITUAL);
     push(CONFIG.ASSETS.BYE_BYE_ANIMATION);
+    const qrBase = `assets/${culture}/qr_code`;
+    assets.push(`${qrBase}.png`);             // Base
+    assets.push(`${qrBase}_mem.png`);         // Solo Memoria
+    assets.push(`${qrBase}_naked.png`);       // Solo Svestito
+    assets.push(`${qrBase}_mem_naked.png`);   // Entrambi
     for(let i=1; i<=3; i++) push(CONFIG.ASSETS.PET_DRESS.replace('{id}', i));
     push(CONFIG.ASSETS.BAKED_FOOD);
 
@@ -461,7 +466,32 @@ function updateImages() {
     let petSrc = s.currentPetImage;
     let showPet = true;
     
-    if (state.ui.isGifPlaying) {
+    if (state.endingStep === 'qr_page') {
+        // 1. Controlliamo se la memoria del livello Cibo è stata sbloccata
+        const hasSeenMemory = state.memoriesViewed.food === true;
+
+        // 2. Controlliamo se il personaggio è "nudo" (nessun vestito selezionato)
+        // Se chosenDressId è null o undefined, significa che è stato svestito.
+        const isUndressed = !state.gameplay.chosenDressId;
+
+        // 3. Costruiamo il suffisso del file in base ai due stati
+        let suffix = "";
+        
+        if (hasSeenMemory) {
+            suffix += "_mem";
+        }
+        
+        if (isUndressed) {
+            suffix += "_naked";
+        }
+        
+        // 4. Assegniamo il percorso finale. 
+        // Risultati possibili: "qr_code.png", "qr_code_mem.png", "qr_code_naked.png", "qr_code_mem_naked.png"
+        petSrc = `assets/${state.currentCulture}/qr_code${suffix}.png`;
+
+    } 
+
+    else if (state.ui.isGifPlaying) {
         petSrc = dom.petImage.src; // Keep current GIF
     } else if (state.appPhase === 'waiting_for_click') {
         petSrc = CONFIG.ASSETS.LOADING_STATIC;
@@ -666,6 +696,10 @@ function updateContentZones() {
         } else if (state.endingStep === 'goodbye') {
             topContent = { type: 'text', value: getText('END_MSG_FINAL_TOP') };
             botContent = { type: 'text', value: getText('END_MSG_FINAL_BOT') };
+        }
+        else if (state.endingStep === 'qr_page') {
+            topContent = { type: 'text', value: getText('QR_TOP') };
+            botContent = { type: 'text', value: getText('QR_BOT') };
         }
     }
     
@@ -1094,6 +1128,13 @@ async function runFinalZoomSequence() {
     
     updateUI();
     triggerHardware();
+
+    await new Promise(r => setTimeout(r, CONFIG.GIF_DURATION_MS || 4000));
+    if (state.sessionToken !== myToken) return;
+
+    state.ui.isGifPlaying = false;
+    state.endingStep = 'qr_page'; // Nuovo stato
+    updateUI();
 }
 
 /* ==========================================================================

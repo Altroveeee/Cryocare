@@ -34,7 +34,8 @@
         "LOADING_ANIMATION": "assets/defaults/loading/wave.gif",
         "BAKED_FOOD": "assets/{culture}/pet/baked_food.png",
         "END_BUTTON": "assets/defaults/end.png",
-        "BYE_BYE_ANIMATION": "assets/{culture}/pet/bye_bye.gif"
+        "BYE_BYE_ANIMATION": "assets/{culture}/pet/bye_bye.gif",
+        "QR_CODE": "assets/{culture}/qr_code.png"
     },
     "CULTURES": ["kurd", "amazigh", "maori", "palestinian", "uyghurus", "guarani"],
     "RULES": {
@@ -53,7 +54,9 @@
         "END_MSG_1": "{endMsg1}",
         "END_MSG_2": "{endMsg2}",
         "END_MSG_FINAL_TOP": "Thank you for taking \ncare of me!",
-        "END_MSG_FINAL_BOT": "\nCome back tomorrow!"
+        "END_MSG_FINAL_BOT": "\nCome back tomorrow!",
+        "QR_TOP": "Log in to the app",
+        "QR_BOT": "View what you learned today"
     },
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,

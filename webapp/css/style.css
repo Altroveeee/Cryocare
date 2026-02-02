@@ -16,13 +16,19 @@
 body {
     background-color: black;
     margin: 0;
+    padding:0;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
     font-family: 'Avenir Next', sans-serif;
     color: black;
+    position: fixed; /* Inchioda il contenuto alla viewport */
+    touch-action: none; /* IL SEGRETO: Dice al browser "non gestire tu i tocchi" */
+    -webkit-overflow-scrolling: touch; /* Disabilita lo scroll inerziale su vecchi iOS */
+    overscroll-behavior: none; /* Impedisce il "rimbalzo" (rubber-banding) */
 }
 
 /* === MAIN CONTAINER === */
