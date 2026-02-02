@@ -50,7 +50,7 @@
         "INFO_HOME": "Tap on the clouds to interact \nwith me!",
         "INFO_FOOD": "Swipe the food \ninside the bowl \nin the right order",
         "INFO_DRESS": "Choose the proper dress for the ritual",
-        "FOOD_NAME": "<span class='blue-text>{foodName}</span>",
+        "FOOD_NAME": "<span class='blue-text'>{foodName}</span>",
         "FOOD_DESCRIPTION": "{foodDescription}",
         "END_MSG_1": "{endMsg1}",
         "END_MSG_2": "{endMsg2}",
