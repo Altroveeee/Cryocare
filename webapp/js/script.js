@@ -55,6 +55,7 @@ const state = {
         foodSequence: [],
         chosenDressId: null,
         currentPetImage: null,
+        hasBeenUndressed: false,
         bakingState: 'none', // none -> baking -> baked
         feedingState: 'idle', // idle -> ready_to_eat -> eating -> sharing -> done
     },
@@ -248,6 +249,7 @@ function resetGame(culture = null) {
     state.gameplay = {
         foodSequence: [],
         chosenDressId: null,
+        hasBeenUndressed: false,
         currentPetImage: getAssetPath(CONFIG.ASSETS.PET_DEFAULT),
         bakingState: 'none',
         feedingState: 'idle'
@@ -476,7 +478,7 @@ function updateImages() {
 
         // 2. Controlliamo se il personaggio è "nudo" (nessun vestito selezionato)
         // Se chosenDressId è null o undefined, significa che è stato svestito.
-        const isUndressed = !state.gameplay.chosenDressId;
+        const isUndressed = state.gameplay.hasBeenUndressed;
 
         // 3. Costruiamo il suffisso del file in base ai due stati
         let suffix = "";
@@ -862,6 +864,7 @@ function startUndressSequence(e) {
             state.progress.dress = false;
             state.progress.ritual = false; 
             state.gameplay.currentPetImage = getAssetPath(CONFIG.ASSETS.PET_DEFAULT);
+            state.gameplay.hasBeenUndressed = true;
             
             setTimeout(() => {
                 btn.remove(); 
