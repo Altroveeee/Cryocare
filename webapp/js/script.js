@@ -100,9 +100,6 @@ BUBBLE_SOUND.volume = 0.5;
 const DRAG_START_SOUND = new Audio('assets/audio/interazione/swipe.mp3');
 DRAG_START_SOUND.volume = 0.5;
 
-const SIMULATE_VIBRATION_SOUND = new Audio('assets/audio/vibration.mp3');
-SIMULATE_VIBRATION_SOUND.volume = 0.5;
-
 
 /* ==========================================================================
    INITIALIZATION
@@ -1195,14 +1192,6 @@ function shouldButtonBeVisible(pageId, id) {
 }
 
 function triggerHardware() {
-    // 1. Play the "Fake Haptic" Sound
-    SIMULATE_VIBRATION_SOUND.currentTime = 0;
-    SIMULATE_VIBRATION_SOUND.play().catch(()=>{});
-
-    // 2. Try real vibration (Will work on Android, ignored on iOS)
-    if (navigator.vibrate) navigator.vibrate(200);
-
-    // 3. Send command to Firebase Realtime Database
     set(ref(db, 'device/trigger'), true)
     .then(() => {
         console.log("Command Sent! Waiting for Arduino...");
