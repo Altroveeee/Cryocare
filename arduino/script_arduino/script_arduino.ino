@@ -34,23 +34,10 @@ IPAddress secondaryDNS(8, 8, 8, 8);      // Optional: Google DNS as backup
 void handleServo() {
   Serial.println("Comando ricevuto: muovi servo");
 
-  try {
-    servo.write(180);
-  }
-  catch (...) {
-    Serial.println("Errore nel muovere il servo prima volta");
-    server.send(500, "text/plain", "Errore nel muovere il servo");
-    return;
-  }
-  delay(1000);      // 5 secondi
-  try {
-    servo.write(0);
-  }
-  catch (...) {
-    Serial.println("Errore nel muovere il servo seconda volta");
-    server.send(500, "text/plain", "Errore nel muovere il servo");
-    return;
-  }
+  servo.write(180);
+  delay(5000);      // 5 secondi
+  delay(1000);      // 1 secondo
+  servo.write(0);
 
   server.send(200, "text/plain", "Servo attivato");
 }
@@ -59,18 +46,7 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
 
-  try {
-    Servo::enableDebugging();
-  } catch (...) {
-    Serial.println("Debugging already enabled");
-  }
-  try {
-    servo.attach(25);
-  }
-  catch (...) {
-    Serial.println("Servo already attached");
-  }
-  servo.write(0); // Posizione iniziale
+  servo.attach(25);
 
   // --- AVVIO WIFI ---
   WiFi.begin(ssid, password);
