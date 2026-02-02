@@ -31,6 +31,7 @@
         "PROGRESS_BAR_PREFIX": "assets/defaults/progress_bar/bar_",
         "BUTTON_PREFIX": "assets/{culture}/buttons/",
         "LOADING_STATIC": "assets/defaults/loading/loading.png",
+        "CLOUD_TAP_ANIMATION": "assets/defaults/loading/cloud_tap.gif",
         "LOADING_ANIMATION": "assets/defaults/loading/wave.gif",
         "BAKED_FOOD": "assets/{culture}/pet/baked_food.png",
         "END_BUTTON": "assets/defaults/end.png",
