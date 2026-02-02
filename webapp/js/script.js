@@ -105,6 +105,10 @@ DRAG_START_SOUND.volume = 0.5;
    ========================================================================== */
 
 async function init(selectedCulture) {
+    document.body.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+    }, { passive: false });
+    
     // 1. Load Config
     await loadConfiguration();
     
