@@ -653,7 +653,7 @@ function updateContentZones() {
 
     if (state.ui.tempContent.top) topContent = state.ui.tempContent.top;
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'welcome') topContent = { type:'text', value: getText('WELCOME') };
-    else if (state.gameplay.bakingState === 'baked') topContent = { type:'text', value: getText('FOOD_NAME')};
+    else if (state.gameplay.bakingState === 'baked') topContent = { type:'html', value: getText('FOOD_NAME')};
     
     // Ending Sequence Logic
     if (state.appPhase === 'ending_sequence') {
@@ -713,7 +713,7 @@ function updateContentZones() {
     else if (state.gameplay.bakingState === 'baked') botContent = { type:'text', value: getText('FOOD_DESCRIPTION') };
     else if (state.appPhase === 'sequence_running' && state.loadingStep === 'instructions') {
         topContent = { type:'text', value: getText('WELCOME') };
-        botContent = { type:'text', value: getText('INTRO') };
+        botContent = { type:'html', value: getText('INTRO') };
     };
 
     renderZone(dom.zoneTop, topContent);
@@ -730,9 +730,11 @@ function renderZone(container, content) {
         
         container.appendChild(s);
     } else if (content.type === 'html') {
+        // Parse HTML text and create corresponding elements
+        const template = document.createElement('template');
+        template.innerHTML = content.value.trim();
         
-        s.textContent = content.value;
-        container.appendChild(s);
+        container.appendChild(template.content);
     } else if (content.type === 'button') {
         const b = document.createElement('div');
         b.className = content.isEndButton ? 'end-button' : 'ritual-btn';

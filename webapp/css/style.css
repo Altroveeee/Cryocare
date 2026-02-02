@@ -32,6 +32,10 @@ body {
     overscroll-behavior: none; /* Impedisce il "rimbalzo" (rubber-banding) */
 }
 
+.blue-text {
+    color: #8AA1CE;
+}
+
 /* === MAIN CONTAINER === */
 #oval-container {
     aspect-ratio: 1325 / 1970; 
