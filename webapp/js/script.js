@@ -1192,8 +1192,6 @@ function shouldButtonBeVisible(pageId, id) {
 }
 
 function triggerHardware() {
-    // const ip = CONFIG.HARDWARE?.ESP_IP;
-    // if(ip) fetch(`${ip}/servo`).catch(e => console.warn("Hardware err", e));
     set(ref(db, 'device/trigger'), true)
     .then(() => {
         console.log("Command Sent! Waiting for Arduino...");
