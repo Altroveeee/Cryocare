@@ -62,6 +62,7 @@
     "LAYOUT": {
         "PROGRESS_BAR_Y": -65,
         "TEXT_TOP_Y": -28,
+        "ENDING_TEXT_TOP_Y": -32,
         "CLOUD_TOP_Y": -30,
         "PET_Y_INTRO": 0,
         "PET_Y" : 5,

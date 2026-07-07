@@ -420,6 +420,8 @@ function applyLayoutPositions() {
     
     if (state.ui.topButton.visible || state.endingStep === "button_wait") {
         setY(dom.zoneTop, layout.CLOUD_TOP_Y);
+    } else if (state.appPhase === 'ending_sequence') {
+        setY(dom.zoneTop, layout.ENDING_TEXT_TOP_Y);
     } else {
         setY(dom.zoneTop, layout.TEXT_TOP_Y);
     }
