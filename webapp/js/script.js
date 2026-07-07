@@ -384,8 +384,8 @@ function evaluateTopButton() {
                 BUBBLE_SOUND.play().catch(()=>{});
                 // ----------------------------------------------------
             } else {
-                // Random Delay 1-3s
-                const delay = 1000 + Math.random() * 2000;
+                // First memory (home): fixed 3s delay; everything else: random 1-3s
+                const delay = (desiredType === 'memory' && pageId === 'home') ? 3000 : 1000 + Math.random() * 2000;
                 state.ui.topButton.timer = setTimeout(() => {
                     state.ui.topButton.visible = true;
 
