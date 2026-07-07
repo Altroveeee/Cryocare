@@ -35,7 +35,7 @@ void handleServo() {
   Serial.println("Comando ricevuto: muovi servo");
 
   servo.write(180);
-  delay(5000);      // 5 secondi
+  delay(2000);      // 5 secondi
   delay(1000);      // 1 secondo
   servo.write(0);
 
