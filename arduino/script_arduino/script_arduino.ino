@@ -20,8 +20,8 @@ WebServer server(80);
 // IPAddress secondaryDNS(0, 0, 0, 0);   // Secondary DNS (optional)
 
 // // Iphone Hotspot settings
-const char* ssid = "iphonearianna";
-const char* password = "bananass";
+const char* ssid = "sofiasiphone";
+const char* password = "bananebanane";
 
 // Static IP configuration for iPhone Hotspot
 // Note: iPhone hotspot allows a very small range of IPs (usually .2 to .14)
