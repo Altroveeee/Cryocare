@@ -538,8 +538,10 @@ function updateImages() {
                 dom.bowlImage.classList.add('bowl-eat-anim');
                 setTimeout(() => {
                     dom.bowlImage.src = CONFIG.ASSETS.BOWL_STATE_2;
-                    dom.bowlImage.classList.remove('bowl-eat-anim');
                 }, 1500);
+                setTimeout(() => {
+                    dom.bowlImage.classList.remove('bowl-eat-anim');
+                }, 2500);
              } else if (s.feedingState === 'sharing' && !dom.bowlImage.classList.contains('bowl-share-anim')) {
                 dom.bowlImage.classList.add('bowl-share-anim');
                 setTimeout(() => {
