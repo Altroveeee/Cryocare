@@ -316,6 +316,7 @@ function updateUI() {
 
 function evaluateTopButton() {
     if (state.appPhase !== 'gameplay') return;
+    if (state.ui.isGifPlaying) return; // Don't show clouds during animations
 
     let desiredType = null;
     const pageId = PAGES[state.currentPageIndex].id;
@@ -325,14 +326,14 @@ function evaluateTopButton() {
     if (pageId === 'home') {
         if (!state.memoriesViewed.home) showMemory = true;
     } else if (pageId === 'food') {
-        // Only show memory if idle (before baking) or fully done
-        const isBeforeBaking = state.gameplay.bakingState === 'none';
+        // Only show memory after full baking+feeding sequence is complete
         const isAfterBaking = state.gameplay.bakingState === 'done' && state.gameplay.feedingState === 'done';
-        if (!state.memoriesViewed.food && (isBeforeBaking || isAfterBaking)) {
+        if (!state.memoriesViewed.food && isAfterBaking) {
             showMemory = true;
         }
     } else if (pageId === 'dress') {
-        if (!state.memoriesViewed.dress) showMemory = true;
+        // Only show memory after ritual animation has completed
+        if (!state.memoriesViewed.dress && state.progress.ritual) showMemory = true;
     }
 
     // 2. Determine Global Next Step
@@ -349,17 +350,18 @@ function evaluateTopButton() {
         const isBeforeBaking = state.gameplay.bakingState === 'none';
         const isAfterBaking = state.gameplay.bakingState === 'done' && state.gameplay.feedingState === 'done';
         // Ensure nothing is rendered during baking or feeding interaction
-        if (isBeforeBaking || isAfterBaking) {
+        const isIdle = isBeforeBaking || isAfterBaking;
+        if (isIdle) {
             // If the next step is Ritual, show it everywhere (logic in updateContentZones handles navigation)
             if (globalNextStep === 'ritual') {
                 desiredType = 'ritual';
             } 
-            // If next step is Food, show button if we are NOT on food page
-            else if (globalNextStep === 'food' && pageId !== 'food') {
+            // If next step is Food, show button if we are NOT on food page AND home memory was viewed
+            else if (globalNextStep === 'food' && pageId !== 'food' && state.memoriesViewed.home) {
                 desiredType = 'food';
             }
-            // If next step is Dress, show button if we are NOT on dress page
-            else if (globalNextStep === 'dress' && pageId !== 'dress') {
+            // If next step is Dress, show button if we are NOT on dress page AND food memory was viewed
+            else if (globalNextStep === 'dress' && pageId !== 'dress' && state.memoriesViewed.food) {
                 desiredType = 'dress';
             }
         }
@@ -1054,6 +1056,9 @@ function startBaking() {
 function triggerRitual() {
     state.progress.ritual = true;
     state.ui.isGifPlaying = true;
+    // Clear the ritual CTA cloud immediately
+    if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+    state.ui.topButton = { activeType: null, visible: false, timer: null };
     dom.petImage.src = getAssetPath(CONFIG.ASSETS.PET_RITUAL);
 
    // --- LOGICA AUDIO DINAMICO ---
@@ -1078,7 +1083,7 @@ function triggerRitual() {
         // --- AGGIUNTA: Ferma l'audio quando finisce la GIF ---
         suonoRituale.pause();
         suonoRituale.currentTime = 0; // Riporta l'audio all'inizio per la prossima volta
-        startEndingPhase();
+        updateUI(); // Let evaluateTopButton() show the dress memory cloud
     }, CONFIG.GIF_DURATION_MS);
 }
 
@@ -1102,6 +1107,9 @@ function triggerMemory() {
 function startEndingPhase() {
     state.appPhase = 'ending_sequence';
     state.endingStep = 'button_wait';
+    // Clear any leftover cloud state from gameplay
+    if (state.ui.topButton.timer) clearTimeout(state.ui.topButton.timer);
+    state.ui.topButton = { activeType: null, visible: false, timer: null };
     updateUI();
 }
 
@@ -1277,23 +1285,29 @@ function setupEventListeners() {
     document.body.addEventListener('click', () => {
         resetInactivityTimer();
 
+        // Memory overlay can be closed in any phase
+        if (dom.overlayMemory.classList.contains('visible')) {
+            dom.overlayMemory.classList.remove('visible');
+            
+            // Mark current memory as viewed
+            const pageId = PAGES[state.currentPageIndex].id;
+            state.memoriesViewed[pageId] = true;
+            
+            // Dress memory was the last step → start ending
+            if (pageId === 'dress' && state.progress.ritual) {
+                startEndingPhase();
+                return;
+            }
+
+            updateUI();
+            return;
+        }
+
         if (state.appPhase === 'black_screen') {
             // Wake up usually handled by Shake/S
         } else if (state.appPhase === 'waiting_for_click') {
             handleStartupSequence();
         } else if (state.appPhase === 'gameplay') {
-            
-            // 1. If Memory Overlay is open, close it
-            if (dom.overlayMemory.classList.contains('visible')) {
-                dom.overlayMemory.classList.remove('visible');
-                
-                // Mark current memory as viewed
-                const pageId = PAGES[state.currentPageIndex].id;
-                state.memoriesViewed[pageId] = true;
-                
-                updateUI();
-                return;
-            }
 
             // 2. Food interaction logic
             if (state.currentPageIndex === 1) { // Food Page
